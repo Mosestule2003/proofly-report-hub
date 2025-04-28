@@ -16,7 +16,9 @@ import {
   MapPin,
   FileImage,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Clock,
+  RefreshCw,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -33,15 +35,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useAuth } from '@/context/AuthContext';
-import { api, Order } from '@/services/api';
+import { api, Order, AdminMetrics } from '@/services/api';
+import AdminMetricsComponent from '@/components/AdminMetrics';
+import PropertyMap from '@/components/PropertyMap';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [expandedProperties, setExpandedProperties] = useState<string[]>([]);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   
   // Form state for report submission
   const [reportComments, setReportComments] = useState('');
@@ -54,30 +60,59 @@ const Admin: React.FC = () => {
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || user?.role !== 'admin')) {
       toast.error("Unauthorized access");
-      navigate('/login');
+      navigate('/admin/login');
     }
   }, [isAuthenticated, user, navigate, isLoading]);
   
-  // Load orders
+  // Load orders and metrics
   useEffect(() => {
-    const loadOrders = async () => {
+    const loadData = async () => {
       if (!user || user.role !== 'admin') return;
+      
+      setIsLoading(true);
       
       try {
         // Initialize mock data
         api.initMockData(user);
         
         // Get all orders (admin has access to all)
-        const allOrders = await api.getOrders();
+        const [allOrders, adminMetrics] = await Promise.all([
+          api.getOrders(),
+          api.getAdminMetrics()
+        ]);
+        
         setOrders(allOrders);
+        setMetrics(adminMetrics);
       } catch (error) {
-        console.error('Error loading orders:', error);
+        console.error('Error loading admin data:', error);
+        toast.error("Failed to load admin data");
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadOrders();
+    loadData();
+    
+    // Subscribe to WebSocket updates
+    const unsubscribe = api.subscribeToAdminUpdates((data) => {
+      // Handle different types of updates
+      if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED' || data.type === 'ORDER_STEP_UPDATE') {
+        // Refresh orders
+        api.getOrders().then(updatedOrders => {
+          setOrders(updatedOrders);
+        });
+        
+        // Refresh metrics
+        api.getAdminMetrics().then(updatedMetrics => {
+          setMetrics(updatedMetrics);
+        });
+      }
+    });
+    
+    // Cleanup
+    return () => {
+      unsubscribe();
+    };
   }, [user]);
   
   const togglePropertyExpand = (propertyId: string) => {
@@ -86,6 +121,10 @@ const Admin: React.FC = () => {
         ? prev.filter(id => id !== propertyId)
         : [...prev, propertyId]
     );
+  };
+  
+  const toggleOrderExpand = (orderId: string) => {
+    setExpandedOrder(prev => prev === orderId ? null : orderId);
   };
   
   const handleUpdateStatus = async (orderId: string, newStatus: 'Evaluator Assigned' | 'In Progress') => {
@@ -104,6 +143,19 @@ const Admin: React.FC = () => {
     } catch (error) {
       console.error('Error updating order status:', error);
       toast.error("Failed to update order status");
+    }
+  };
+  
+  const handleAdvanceOrderStep = async (orderId: string) => {
+    try {
+      const updatedOrder = await api.advanceOrderStep(orderId);
+      
+      if (updatedOrder) {
+        toast.success(`Advanced order to next step`);
+      }
+    } catch (error) {
+      console.error('Error advancing order step:', error);
+      toast.error("Failed to advance order step");
     }
   };
   
@@ -172,7 +224,9 @@ const Admin: React.FC = () => {
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       </div>
       
-      <Tabs defaultValue="pending" className="space-y-4">
+      {metrics && <AdminMetricsComponent {...metrics} />}
+      
+      <Tabs defaultValue="pending" className="space-y-4 mt-8">
         <TabsList>
           <TabsTrigger value="pending" className="relative">
             Pending Orders
@@ -298,7 +352,7 @@ const Admin: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {assignedOrders.map(order => (
-                    <Card key={order.id}>
+                    <Card key={order.id} className="overflow-hidden">
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <div>
@@ -310,35 +364,102 @@ const Admin: React.FC = () => {
                               {order.properties.length} {order.properties.length === 1 ? 'property' : 'properties'}
                             </CardDescription>
                           </div>
-                          <Badge 
-                            variant="outline"
-                            className={order.status === 'In Progress' 
-                              ? 'bg-purple-50 text-purple-700 border-purple-200'
-                              : 'bg-blue-50 text-blue-700 border-blue-200'
-                            }
-                          >
-                            {order.status}
-                          </Badge>
+                          <div className="flex items-center space-x-2">
+                            <Badge 
+                              variant="outline"
+                              className={order.status === 'In Progress' 
+                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                              }
+                            >
+                              {order.status}
+                            </Badge>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => toggleOrderExpand(order.id)}
+                            >
+                              {expandedOrder === order.id 
+                                ? <ChevronUp className="h-4 w-4" />
+                                : <ChevronDown className="h-4 w-4" />
+                              }
+                            </Button>
+                          </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="pb-2">
-                        <div className="space-y-3">
-                          {order.properties.slice(0, 2).map(property => (
+                      <CardContent className={`pb-2 ${expandedOrder === order.id ? 'block' : 'hidden'}`}>
+                        <div className="space-y-3 mb-4">
+                          {/* Current progress */}
+                          <div className="border rounded-md p-3">
+                            <div className="flex justify-between items-center mb-2">
+                              <p className="font-medium">Evaluation Progress</p>
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                {order.currentStep?.replace(/_/g, ' ')}
+                              </Badge>
+                            </div>
+                            
+                            {order.currentPropertyIndex !== undefined && order.properties.length > 0 && (
+                              <div className="space-y-4">
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                  <Clock className="h-4 w-4 mr-1" />
+                                  <span>
+                                    Property {order.currentPropertyIndex + 1} of {order.properties.length}
+                                  </span>
+                                </div>
+                                
+                                {/* Map of current property */}
+                                <PropertyMap 
+                                  property={order.properties[order.currentPropertyIndex]}
+                                  currentStep={
+                                    order.currentStep === 'EN_ROUTE' ? 0 : 
+                                    order.currentStep === 'ARRIVED' ? 1 : 
+                                    order.currentStep === 'EVALUATING' ? 2 : 3
+                                  }
+                                />
+                                
+                                <div className="flex justify-between">
+                                  <p className="text-sm font-medium">
+                                    {order.properties[order.currentPropertyIndex].address}
+                                  </p>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => handleAdvanceOrderStep(order.id)}
+                                    className="h-8"
+                                  >
+                                    <RefreshCw className="h-3 w-3 mr-2" />
+                                    Advance Step
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* All properties */}
+                          <p className="font-medium mt-4 mb-2">All Properties</p>
+                          {order.properties.map((property, index) => (
                             <div key={property.id} className="border rounded-md p-3">
-                              <p className="font-medium">{property.address}</p>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <div className={`h-2 w-2 rounded-full mr-2 ${
+                                    index < (order.currentPropertyIndex || 0) ? 'bg-green-500' : 
+                                    index === (order.currentPropertyIndex || 0) ? 'bg-primary animate-pulse' : 
+                                    'bg-muted-foreground/30'
+                                  }`}></div>
+                                  <p className="font-medium">{property.address}</p>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  ${property.price}
+                                </span>
+                              </div>
                               {property.description && (
-                                <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+                                <p className="text-sm text-muted-foreground mt-1 ml-4">
                                   {property.description}
                                 </p>
                               )}
                             </div>
                           ))}
-                          
-                          {order.properties.length > 2 && (
-                            <p className="text-sm text-muted-foreground">
-                              + {order.properties.length - 2} more properties
-                            </p>
-                          )}
                         </div>
                       </CardContent>
                       <CardFooter className="flex justify-between gap-4">

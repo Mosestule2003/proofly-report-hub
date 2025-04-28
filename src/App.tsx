@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import NotFound from "./pages/NotFound";
 
@@ -38,12 +39,20 @@ const App = () => (
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/admin" element={<Admin />} />
+                  <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/checkout/success/:orderId" element={<CheckoutSuccess />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
               <footer className="bg-muted py-6 px-6 text-center text-sm text-muted-foreground">
-                <p>© 2025 Proofly. All rights reserved.</p>
+                <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
+                  <p>© 2025 Proofly. All rights reserved.</p>
+                  <div className="mt-2 sm:mt-0">
+                    <a href="/admin/login" className="text-muted-foreground hover:text-foreground transition-colors">
+                      Admin Login
+                    </a>
+                  </div>
+                </div>
               </footer>
             </div>
           </BrowserRouter>

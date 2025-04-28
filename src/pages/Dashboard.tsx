@@ -15,11 +15,14 @@ import {
   Building,
   FileVideo,
   FileImage,
-  ExternalLink
+  ExternalLink,
+  MapPin,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { api, Order, Report } from '@/services/api';
+import { api, Order, Report, OrderStepStatus } from '@/services/api';
 import { format } from 'date-fns';
+import PropertyMap from '@/components/PropertyMap';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -68,7 +71,45 @@ const Dashboard: React.FC = () => {
     };
     
     loadOrders();
-  }, [user]);
+    
+    // Subscribe to WebSocket updates for order status changes
+    if (user) {
+      const unsubscribe = api.subscribeToOrders(user.id, (data) => {
+        console.log('WebSocket update:', data);
+        
+        // Handle order updates
+        if (data.type === 'ORDER_UPDATED' || data.type === 'ORDER_STEP_UPDATE') {
+          // Refresh order list
+          api.getOrders(user.id).then(updatedOrders => {
+            setOrders(updatedOrders);
+            
+            // If the currently selected order was updated, refresh it
+            if (selectedOrder && data.orderId === selectedOrder.id) {
+              const updatedOrder = updatedOrders.find(o => o.id === selectedOrder.id);
+              if (updatedOrder) {
+                setSelectedOrder(updatedOrder);
+                
+                // If status changed to Report Ready, load the report
+                if (updatedOrder.status === 'Report Ready' && selectedOrder.status !== 'Report Ready') {
+                  loadReport(updatedOrder.id);
+                }
+              }
+            }
+          });
+        }
+        
+        // Handle new report creation
+        if (data.type === 'REPORT_CREATED' && selectedOrder && data.report.orderId === selectedOrder.id) {
+          setReport(data.report);
+        }
+      });
+      
+      // Cleanup subscription on unmount
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, [user, selectedOrder]);
   
   const loadReport = async (orderId: string) => {
     setIsLoadingReport(true);
@@ -139,6 +180,54 @@ const Dashboard: React.FC = () => {
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Report Ready</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+  
+  // Helper to get step message based on order status
+  const getOrderStepMessage = (order: Order): string => {
+    if (!order.currentStep) return '';
+    
+    const currentPropertyIndex = order.currentPropertyIndex || 0;
+    const property = order.properties[currentPropertyIndex];
+    const address = property ? property.address.split(',')[0] : ''; // Just the street for brevity
+    
+    switch (order.currentStep) {
+      case 'PENDING_MATCH':
+        return 'Finding an evaluator near you...';
+      case 'EN_ROUTE':
+        return `Evaluator en route to ${address}...`;
+      case 'ARRIVED':
+        return `Evaluator has arrived at ${address}...`;
+      case 'EVALUATING':
+        return `Evaluating property at ${address}...`;
+      case 'COMPLETED':
+        return `Evaluation completed for ${address}.`;
+      case 'REPORT_READY':
+        return 'Your evaluation report is ready!';
+      default:
+        return '';
+    }
+  };
+  
+  // Get which step is the order on
+  const getCurrentStepNumber = (order: Order): number => {
+    if (!order.currentStep) return 0;
+    const steps: OrderStepStatus[] = ['PENDING_MATCH', 'EN_ROUTE', 'ARRIVED', 'EVALUATING', 'COMPLETED', 'REPORT_READY'];
+    return steps.indexOf(order.currentStep);
+  };
+
+  // Get the map step number (0: en route, 1: arrived, 2: evaluating, 3: completed)
+  const getMapStepNumber = (orderStep: OrderStepStatus | undefined): number => {
+    if (!orderStep) return 0;
+    
+    switch (orderStep) {
+      case 'EN_ROUTE': return 0;
+      case 'ARRIVED': return 1;
+      case 'EVALUATING': return 2;
+      case 'COMPLETED': 
+      case 'REPORT_READY': 
+        return 3;
+      default: return 0;
     }
   };
   
@@ -316,16 +405,59 @@ const Dashboard: React.FC = () => {
                   )
                 ) : (
                   <div className="py-8">
-                    <div className="border border-dashed rounded-lg p-6 bg-muted/30 text-center">
-                      <Calendar className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-                      <h3 className="text-lg font-medium mb-1">Evaluation in progress</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Your property evaluation is currently in {selectedOrder.status.toLowerCase()} status.
-                        We'll notify you when the report is ready.
-                      </p>
-                      <Button onClick={() => navigate('/')}>
-                        Request Another Evaluation
-                      </Button>
+                    <div className="border border-dashed rounded-lg p-6 bg-muted/30">
+                      <div className="text-center mb-6">
+                        <Clock className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                        <h3 className="text-lg font-medium mb-1">Evaluation in progress</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {getOrderStepMessage(selectedOrder)}
+                        </p>
+                      </div>
+                      
+                      {/* Progress indicator */}
+                      <div className="mb-6 relative">
+                        <div className="h-1 bg-muted-foreground/20 rounded-full mb-2">
+                          <div 
+                            className="h-1 bg-primary rounded-full transition-all duration-500"
+                            style={{ width: `${(getCurrentStepNumber(selectedOrder) / 5) * 100}%` }}
+                          ></div>
+                        </div>
+                        
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Finding Evaluator</span>
+                          <span>Evaluation</span>
+                          <span>Report Ready</span>
+                        </div>
+                      </div>
+                      
+                      {/* Map for in-progress evaluations */}
+                      {selectedOrder.currentStep && 
+                       selectedOrder.currentStep !== 'PENDING_MATCH' && 
+                       selectedOrder.currentStep !== 'REPORT_READY' && 
+                       selectedOrder.currentPropertyIndex !== undefined && (
+                        <div className="mb-6">
+                          <p className="font-medium text-sm mb-2 flex items-center">
+                            <MapPin className="h-4 w-4 mr-1 text-primary" />
+                            Current Location
+                          </p>
+                          
+                          <PropertyMap 
+                            property={selectedOrder.properties[selectedOrder.currentPropertyIndex]} 
+                            currentStep={getMapStepNumber(selectedOrder.currentStep)}
+                            className="h-48"
+                          />
+                          
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {selectedOrder.properties[selectedOrder.currentPropertyIndex].address}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="text-center">
+                        <Button onClick={() => navigate('/')}>
+                          Request Another Evaluation
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}

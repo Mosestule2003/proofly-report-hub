@@ -1,8 +1,10 @@
+
 import { toast } from 'sonner';
 import { Property } from '@/context/CartContext';
 import { User } from '@/context/AuthContext';
 
 export type OrderStatus = 'Pending' | 'Evaluator Assigned' | 'In Progress' | 'Report Ready';
+export type OrderStepStatus = 'PENDING_MATCH' | 'EN_ROUTE' | 'ARRIVED' | 'EVALUATING' | 'COMPLETED' | 'REPORT_READY';
 
 export type Order = {
   id: string;
@@ -11,6 +13,9 @@ export type Order = {
   totalPrice: number;
   discount: number;
   status: OrderStatus;
+  currentStep?: OrderStepStatus;
+  currentPropertyIndex?: number;
+  evaluatorLocation?: { lat: number; lng: number };
   createdAt: string;
 };
 
@@ -23,9 +28,29 @@ export type Report = {
   createdAt: string;
 };
 
+export type AdminMetrics = {
+  tenantCount: number;
+  orderCount: number;
+  pendingOrderCount: number;
+  completedOrderCount: number;
+};
+
 // Mock data store
 let orders: Order[] = [];
 let reports: Report[] = [];
+
+// WebSocket simulation (in a real app, this would be a real WebSocket connection)
+type WebSocketCallback = (data: any) => void;
+const webSocketListeners: { [key: string]: WebSocketCallback[] } = {
+  'orders': [],
+  'admin': [],
+};
+
+const notifyWebSocketListeners = (channel: string, data: any) => {
+  webSocketListeners[channel]?.forEach(callback => {
+    setTimeout(() => callback(data), 0);
+  });
+};
 
 // Mock API functions
 export const api = {
@@ -41,10 +66,17 @@ export const api = {
       totalPrice,
       discount,
       status: 'Pending',
+      currentStep: 'PENDING_MATCH',
+      currentPropertyIndex: 0,
       createdAt: new Date().toISOString(),
     };
     
     orders = [...orders, newOrder];
+    
+    // Notify WebSocket listeners
+    notifyWebSocketListeners('orders', { type: 'ORDER_CREATED', order: newOrder });
+    notifyWebSocketListeners('admin', { type: 'ORDER_CREATED', order: newOrder });
+    
     return newOrder;
   },
   
@@ -84,6 +116,83 @@ export const api = {
       status,
     };
     
+    // Notify WebSocket listeners
+    notifyWebSocketListeners('orders', { 
+      type: 'ORDER_UPDATED', 
+      orderId, 
+      status,
+    });
+    notifyWebSocketListeners('admin', { 
+      type: 'ORDER_UPDATED', 
+      orderId, 
+      status,
+    });
+    
+    return orders[orderIndex];
+  },
+  
+  // Order step simulation
+  advanceOrderStep: async (orderId: string): Promise<Order | null> => {
+    const orderIndex = orders.findIndex(o => o.id === orderId);
+    
+    if (orderIndex === -1) {
+      return null;
+    }
+    
+    const order = orders[orderIndex];
+    const propertyCount = order.properties.length;
+    
+    let newStatus: OrderStatus = order.status;
+    let newStep: OrderStepStatus = order.currentStep || 'PENDING_MATCH';
+    let newPropertyIndex = order.currentPropertyIndex || 0;
+    
+    // Advance the step based on current state
+    if (newStep === 'PENDING_MATCH') {
+      newStatus = 'Evaluator Assigned';
+      newStep = 'EN_ROUTE';
+      newPropertyIndex = 0;
+    } else if (newStep === 'EN_ROUTE') {
+      newStep = 'ARRIVED';
+    } else if (newStep === 'ARRIVED') {
+      newStatus = 'In Progress';
+      newStep = 'EVALUATING';
+    } else if (newStep === 'EVALUATING') {
+      newStep = 'COMPLETED';
+    } else if (newStep === 'COMPLETED') {
+      // Move to the next property or finish
+      if (newPropertyIndex < propertyCount - 1) {
+        newPropertyIndex++;
+        newStep = 'EN_ROUTE';
+      } else {
+        newStep = 'REPORT_READY';
+        newStatus = 'Report Ready';
+      }
+    }
+    
+    // Update order with new state
+    orders[orderIndex] = {
+      ...order,
+      status: newStatus,
+      currentStep: newStep,
+      currentPropertyIndex: newPropertyIndex,
+    };
+    
+    // Notify WebSocket listeners
+    notifyWebSocketListeners('orders', { 
+      type: 'ORDER_STEP_UPDATE', 
+      orderId,
+      status: newStatus,
+      step: newStep,
+      propertyIndex: newPropertyIndex,
+    });
+    notifyWebSocketListeners('admin', { 
+      type: 'ORDER_STEP_UPDATE', 
+      orderId,
+      status: newStatus,
+      step: newStep,
+      propertyIndex: newPropertyIndex,
+    });
+    
     return orders[orderIndex];
   },
   
@@ -105,6 +214,17 @@ export const api = {
     };
     
     reports = [...reports, newReport];
+    
+    // Notify WebSocket listeners
+    notifyWebSocketListeners('orders', { 
+      type: 'REPORT_CREATED', 
+      report: newReport 
+    });
+    notifyWebSocketListeners('admin', { 
+      type: 'REPORT_CREATED', 
+      report: newReport 
+    });
+    
     return newReport;
   },
   
@@ -114,6 +234,44 @@ export const api = {
     
     const report = reports.find(r => r.orderId === orderId);
     return report || null;
+  },
+  
+  // Admin
+  getAdminMetrics: async (): Promise<AdminMetrics> => {
+    // Simulate API delay
+    await new Promise(r => setTimeout(r, 800));
+    
+    return {
+      tenantCount: 5, // Mock data
+      orderCount: orders.length,
+      pendingOrderCount: orders.filter(o => o.status !== 'Report Ready').length,
+      completedOrderCount: orders.filter(o => o.status === 'Report Ready').length,
+    };
+  },
+  
+  // WebSocket simulation
+  subscribeToOrders: (userId: string, callback: WebSocketCallback) => {
+    webSocketListeners['orders'].push(callback);
+    
+    // Return an unsubscribe function
+    return () => {
+      const index = webSocketListeners['orders'].indexOf(callback);
+      if (index !== -1) {
+        webSocketListeners['orders'].splice(index, 1);
+      }
+    };
+  },
+  
+  subscribeToAdminUpdates: (callback: WebSocketCallback) => {
+    webSocketListeners['admin'].push(callback);
+    
+    // Return an unsubscribe function
+    return () => {
+      const index = webSocketListeners['admin'].indexOf(callback);
+      if (index !== -1) {
+        webSocketListeners['admin'].splice(index, 1);
+      }
+    };
   },
   
   // Initialize with some mock data for demo
@@ -152,6 +310,7 @@ export const api = {
       totalPrice: 60,
       discount: 0,
       status: 'Report Ready',
+      currentStep: 'REPORT_READY',
       createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days ago
     };
     
@@ -163,6 +322,8 @@ export const api = {
       totalPrice: 45,
       discount: 0,
       status: 'Pending',
+      currentStep: 'PENDING_MATCH',
+      currentPropertyIndex: 0,
       createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
     };
     

@@ -1,122 +1,152 @@
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle, ArrowRight } from 'lucide-react';
 import { api, Order } from '@/services/api';
+import OrderProcessingModal from '@/components/OrderProcessingModal';
 
 const CheckoutSuccess: React.FC = () => {
-  const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
+  const { orderId } = useParams<{ orderId: string }>();
   const [order, setOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showProcessing, setShowProcessing] = useState(true);
   
   useEffect(() => {
     const loadOrder = async () => {
-      if (!orderId) {
-        navigate('/');
-        return;
-      }
+      if (!orderId) return;
       
       try {
         const orderData = await api.getOrderById(orderId);
-        
-        if (!orderData) {
-          navigate('/');
-          return;
+        if (orderData) {
+          setOrder(orderData);
         }
-        
-        setOrder(orderData);
       } catch (error) {
-        console.error('Error fetching order:', error);
+        console.error('Error loading order:', error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
     
     loadOrder();
-    
-    // Auto-redirect to dashboard after 5 seconds
-    const timer = setTimeout(() => {
-      navigate('/dashboard');
-    }, 5000);
-    
-    return () => clearTimeout(timer);
-  }, [orderId, navigate]);
+  }, [orderId]);
   
-  if (loading) {
+  const handleProcessingComplete = () => {
+    setShowProcessing(false);
+    
+    // Update order status to "Report Ready" (simulated)
+    if (order) {
+      api.updateOrderStatus(order.id, 'Report Ready')
+        .then(() => {
+          // In a real app, the WebSocket would push this update
+          console.log('Order status updated to Report Ready');
+        })
+        .catch(err => {
+          console.error('Error updating order status:', err);
+        });
+    }
+  };
+  
+  if (isLoading) {
     return (
-      <div className="container py-20 flex justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold">Loading order details...</h2>
+      <div className="container max-w-4xl py-12 text-center">
+        <div className="flex flex-col items-center justify-center p-8">
+          <p className="text-lg text-muted-foreground">Loading order details...</p>
         </div>
       </div>
     );
   }
   
+  if (!order) {
+    return (
+      <div className="container max-w-4xl py-12">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Order Not Found</CardTitle>
+            <CardDescription>
+              We couldn't find the order details. Please check the URL or contact support.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex justify-center">
+            <Button onClick={() => navigate('/')}>
+              Return to Home
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+  
   return (
-    <div className="container max-w-2xl py-12">
-      <Card className="p-8">
-        <div className="text-center mb-6">
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold mb-2">Thank You!</h1>
-          <p className="text-xl text-muted-foreground">
-            Your evaluation request has been received
-          </p>
-        </div>
-        
-        <div className="border rounded-lg p-4 mb-6">
-          <div className="flex justify-between mb-3">
-            <span className="text-muted-foreground">Order ID:</span>
-            <span className="font-medium">{orderId?.substring(0, 8)}</span>
-          </div>
+    <>
+      {showProcessing && (
+        <OrderProcessingModal 
+          properties={order.properties} 
+          onComplete={handleProcessingComplete} 
+        />
+      )}
+      
+      <div className="container max-w-4xl py-12">
+        <Card>
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <CheckCircle className="h-16 w-16 text-green-500" />
+            </div>
+            <CardTitle className="text-2xl">Order Confirmed!</CardTitle>
+            <CardDescription className="text-lg">
+              Your property evaluation request has been submitted.
+            </CardDescription>
+          </CardHeader>
           
-          <div className="flex justify-between mb-3">
-            <span className="text-muted-foreground">Date:</span>
-            <span className="font-medium">
-              {order ? new Date(order.createdAt).toLocaleDateString() : ''}
-            </span>
-          </div>
+          <CardContent className="space-y-4">
+            <div className="border rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Order ID</p>
+                  <p className="font-medium">{order.id.substring(0, 8)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Properties</p>
+                  <p className="font-medium">{order.properties.length}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Price</p>
+                  <p className="font-medium">${order.totalPrice.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <p className="font-medium">{showProcessing ? 'Processing' : 'Report Ready'}</p>
+                </div>
+              </div>
+            </div>
+            
+            {!showProcessing && (
+              <div className="bg-muted/30 rounded-lg p-4 text-center">
+                <p className="font-medium mb-2">Good news! Your report is ready.</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  View the details in your dashboard.
+                </p>
+                <Button onClick={() => navigate('/dashboard')}>
+                  View Report
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </CardContent>
           
-          <div className="flex justify-between mb-3">
-            <span className="text-muted-foreground">Properties:</span>
-            <span className="font-medium">{order?.properties.length}</span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Total:</span>
-            <span className="font-bold">${order?.totalPrice.toFixed(2)}</span>
-          </div>
-        </div>
-        
-        <div className="bg-muted/30 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold mb-2">What happens next?</h3>
-          <p className="text-sm text-muted-foreground mb-3">
-            Our evaluation team will review your request and begin processing your property evaluations.
-            You'll receive updates on your dashboard as we make progress.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            You will be redirected to your dashboard in a few seconds.
-          </p>
-        </div>
-        
-        <div className="flex justify-center space-x-4">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/')}
-          >
-            Return Home
-          </Button>
-          <Button 
-            onClick={() => navigate('/dashboard')}
-          >
-            Go to Dashboard
-          </Button>
-        </div>
-      </Card>
-    </div>
+          <CardFooter className="flex justify-between">
+            <Button variant="outline" onClick={() => navigate('/')}>
+              Return to Home
+            </Button>
+            <Button onClick={() => navigate('/dashboard')}>
+              Go to Dashboard
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    </>
   );
 };
 
