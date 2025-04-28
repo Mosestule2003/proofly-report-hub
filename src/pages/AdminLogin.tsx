@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
@@ -59,7 +59,7 @@ const AdminLogin: React.FC = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@proofly.com"
+                placeholder="admin@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
@@ -76,6 +76,14 @@ const AdminLogin: React.FC = () => {
                 disabled={isLoading}
                 required
               />
+            </div>
+            <div className="p-3 bg-muted/50 rounded-md flex items-start">
+              <Info className="h-5 w-5 mr-2 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">Demo Credentials</p>
+                <p>Email: admin@example.com</p>
+                <p>Password: password123</p>
+              </div>
             </div>
           </CardContent>
           <CardFooter>
