@@ -17,7 +17,6 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import NotFound from "./pages/NotFound";
-import { FramerMotion } from "framer-motion";
 
 const queryClient = new QueryClient();
 
