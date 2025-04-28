@@ -1,7 +1,6 @@
-
 import { toast } from 'sonner';
 import { Property } from '@/context/CartContext';
-import { User } from '@/context/AuthContext';
+import { User, mockUsers } from '@/context/AuthContext';
 
 export type OrderStatus = 'Pending' | 'Evaluator Assigned' | 'In Progress' | 'Report Ready';
 export type OrderStepStatus = 'PENDING_MATCH' | 'EN_ROUTE' | 'ARRIVED' | 'EVALUATING' | 'COMPLETED' | 'REPORT_READY';
@@ -73,9 +72,13 @@ export const api = {
     
     orders = [...orders, newOrder];
     
-    // Notify WebSocket listeners
+    // Notify WebSocket listeners - ensure admin gets updates for ALL orders
     notifyWebSocketListeners('orders', { type: 'ORDER_CREATED', order: newOrder });
     notifyWebSocketListeners('admin', { type: 'ORDER_CREATED', order: newOrder });
+    
+    // Log the order creation for debugging
+    console.log(`Order created for user ${userId}:`, newOrder);
+    console.log(`Total orders in system: ${orders.length}`);
     
     return newOrder;
   },
@@ -276,6 +279,12 @@ export const api = {
   
   // Initialize with some mock data for demo
   initMockData: (currentUser: User) => {
+    if (orders.length > 0) {
+      // Only initialize once to avoid duplicate data
+      console.log('Mock data already initialized, skipping');
+      return;
+    }
+    
     const mockProperties1: Property[] = [
       {
         id: '1',
@@ -300,7 +309,8 @@ export const api = {
       },
     ];
     
-    const tenantId = currentUser.role === 'tenant' ? currentUser.id : '1';
+    // Find tenant ID or use default
+    const tenantId = mockUsers.find(u => u.role === 'tenant')?.id || '1';
     
     // Add completed order with report
     const order1: Order = {
@@ -341,5 +351,20 @@ export const api = {
     reports = [report1];
     
     console.log('Mock data initialized for', currentUser.role);
+  },
+  
+  // Method to ensure orders from new users show up
+  ensureOrdersVisibleToAdmin: () => {
+    // This function is called on admin login to ensure all users' orders are visible
+    console.log(`Ensuring all ${orders.length} orders are visible to admin`);
+    
+    // Re-notify all orders to admin channel
+    orders.forEach(order => {
+      notifyWebSocketListeners('admin', { 
+        type: 'ORDER_UPDATED', 
+        orderId: order.id, 
+        status: order.status,
+      });
+    });
   }
 };

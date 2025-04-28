@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface User {
@@ -19,8 +20,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo
-const mockUsers: User[] = [
+// Mock users for demo - we export this so the API service can access it
+export const mockUsers: User[] = [
   { id: '1', email: 'tenant@example.com', name: 'Demo Tenant', role: 'tenant' },
   { id: '2', email: 'admin@example.com', name: 'Admin User', role: 'admin' },
 ];

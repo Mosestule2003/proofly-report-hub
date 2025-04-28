@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ import {
   ChevronUp,
   Clock,
   RefreshCw,
+  Users
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -75,14 +75,19 @@ const Admin: React.FC = () => {
         // Initialize mock data
         api.initMockData(user);
         
+        // Ensure all orders are visible to admin
+        api.ensureOrdersVisibleToAdmin();
+        
         // Get all orders (admin has access to all)
         const [allOrders, adminMetrics] = await Promise.all([
-          api.getOrders(),
+          api.getOrders(), // No userId means get all orders
           api.getAdminMetrics()
         ]);
         
         setOrders(allOrders);
         setMetrics(adminMetrics);
+        
+        console.log(`Admin dashboard loaded with ${allOrders.length} orders`);
       } catch (error) {
         console.error('Error loading admin data:', error);
         toast.error("Failed to load admin data");
@@ -97,8 +102,11 @@ const Admin: React.FC = () => {
     const unsubscribe = api.subscribeToAdminUpdates((data) => {
       // Handle different types of updates
       if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED' || data.type === 'ORDER_STEP_UPDATE') {
+        console.log('Admin received update:', data);
+        
         // Refresh orders
         api.getOrders().then(updatedOrders => {
+          console.log(`Admin dashboard refreshed with ${updatedOrders.length} orders`);
           setOrders(updatedOrders);
         });
         
@@ -106,6 +114,11 @@ const Admin: React.FC = () => {
         api.getAdminMetrics().then(updatedMetrics => {
           setMetrics(updatedMetrics);
         });
+        
+        // Show a toast notification for new orders
+        if (data.type === 'ORDER_CREATED') {
+          toast.success(`New order received! Order #${data.order.id.substring(0, 8)}`);
+        }
       }
     });
     
