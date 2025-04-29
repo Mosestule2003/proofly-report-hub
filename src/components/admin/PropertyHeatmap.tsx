@@ -10,7 +10,7 @@ interface PropertyHeatmapProps {
 
 const PropertyHeatmap: React.FC<PropertyHeatmapProps> = ({ className }) => {
   return (
-    <Card className={cn('', className)}>
+    <Card className={cn('h-full', className)}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Map className="h-4 w-4" /> Property Demand Heatmap
