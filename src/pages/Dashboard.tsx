@@ -24,7 +24,7 @@ import { api, Order, Report, OrderStepStatus } from '@/services/api';
 import { format } from 'date-fns';
 import PropertyMap from '@/components/PropertyMap';
 import EvaluatorProfile from '@/components/EvaluatorProfile';
-import NotificationBell from '@/components/NotificationBell';
+import NotificationBell, { AppNotification } from '@/components/NotificationBell';
 import PropertyEvaluationTracker from '@/components/PropertyEvaluationTracker';
 
 const Dashboard: React.FC = () => {
@@ -35,7 +35,7 @@ const Dashboard: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   
   // Protect route
   useEffect(() => {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { api, Order } from '@/services/api';
 import OrderProcessingModal from '@/components/OrderProcessingModal';
+import { Property } from '@/context/CartContext';
 
 const CheckoutSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -79,11 +79,13 @@ const CheckoutSuccess: React.FC = () => {
     );
   }
   
-  // Ensure all properties have an id (required for OrderProcessingModal)
-  const propertiesWithIds = order.properties.map(prop => ({
+  // Ensure all properties have an id and price (required for OrderProcessingModal)
+  const propertiesWithIds = order?.properties.map(prop => ({
     id: prop.id || crypto.randomUUID(),
-    address: prop.address
-  }));
+    address: prop.address,
+    description: prop.description || '',
+    price: prop.price || 30
+  })) as Property[] || [];
   
   return (
     <>

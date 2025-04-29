@@ -10,7 +10,8 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-export interface Notification {
+// Rename to AppNotification to avoid conflict with browser's Notification API
+export interface AppNotification {
   id: string;
   title: string;
   message: string;
@@ -19,7 +20,7 @@ export interface Notification {
 }
 
 interface NotificationBellProps {
-  notifications: Notification[];
+  notifications: AppNotification[];
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
 }

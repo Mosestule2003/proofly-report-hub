@@ -1,8 +1,7 @@
-
 import { toast } from 'sonner';
 import { Property } from '@/context/CartContext';
 import { User, mockUsers } from '@/context/AuthContext';
-import { Notification } from '@/components/NotificationBell';
+import { AppNotification } from '@/components/NotificationBell';
 import { Evaluator } from '@/components/EvaluatorProfile';
 
 export type OrderStatus = 'Pending' | 'Evaluator Assigned' | 'In Progress' | 'Report Ready';
@@ -49,7 +48,7 @@ export type AgentContact = {
 // Mock data store
 let orders: Order[] = [];
 let reports: Report[] = [];
-let notifications: { [userId: string]: Notification[] } = {};
+let notifications: { [userId: string]: AppNotification[] } = {};
 let evaluators: Evaluator[] = [
   {
     id: 'eval1',
@@ -97,7 +96,7 @@ const addNotification = (userId: string, title: string, message: string) => {
     notifications[userId] = [];
   }
   
-  const newNotification: Notification = {
+  const newNotification: AppNotification = {
     id: crypto.randomUUID(),
     title,
     message,
@@ -402,7 +401,7 @@ export const api = {
   },
   
   // Notifications
-  getNotifications: async (userId: string): Promise<Notification[]> => {
+  getNotifications: async (userId: string): Promise<AppNotification[]> => {
     // Simulate API delay
     await new Promise(r => setTimeout(r, 300));
     
