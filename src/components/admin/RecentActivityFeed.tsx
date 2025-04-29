@@ -1,43 +1,18 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, CheckCircle, AlertCircle, Clock, Calendar } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface ActivityItem {
-  id: string;
-  type: 'evaluation_complete' | 'outreach_success' | 'booking_confirmed' | 'system_alert';
-  message: string;
-  timestamp: string;
-  read: boolean;
-}
+import { format } from 'date-fns';
 
 interface RecentActivityFeedProps {
-  activities: ActivityItem[];
-  className?: string;
+  activities: any[];
+  className?: string; // Added className prop
 }
 
-const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ 
-  activities,
-  className 
-}) => {
-  const getActivityIcon = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'evaluation_complete':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'outreach_success':
-        return <Activity className="h-5 w-5 text-primary" />;
-      case 'booking_confirmed':
-        return <Calendar className="h-5 w-5 text-blue-500" />;
-      case 'system_alert':
-        return <AlertCircle className="h-5 w-5 text-amber-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-muted-foreground" />;
-    }
-  };
-  
+const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ activities, className }) => {
   return (
-    <Card className={className}>
+    <Card className={cn('h-full', className)}> {/* Using cn to combine classes */}
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Activity className="h-4 w-4" /> Recent Activity
@@ -48,29 +23,27 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
           {activities.length === 0 ? (
             <p className="text-center text-muted-foreground p-4">No recent activity</p>
           ) : (
-            <ul className="space-y-3">
-              {activities.map((activity) => (
-                <li 
-                  key={activity.id}
-                  className={cn(
-                    "flex items-start gap-3 p-2 rounded-md",
-                    activity.read ? "opacity-70" : "bg-muted/30"
-                  )}
-                >
-                  <div className="mt-0.5">
-                    {getActivityIcon(activity.type)}
+            <div className="space-y-4">
+              {activities.map((activity, index) => (
+                <div key={index} className="flex gap-2">
+                  <div className={cn(
+                    "mt-0.5 h-2 w-2 rounded-full",
+                    activity.type === 'order' ? "bg-blue-500" :
+                    activity.type === 'user' ? "bg-green-500" :
+                    activity.type === 'system' ? "bg-amber-500" : "bg-slate-500"
+                  )}></div>
+                  <div className="flex-1">
+                    <p className="text-sm">
+                      {activity.message}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(activity.timestamp), 'MMM d, h:mm a')}
+                    </p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm">{activity.message}</p>
-                    <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
-                  </div>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
-          <div className="text-center">
-            <a href="#" className="text-xs text-primary hover:underline">View All Activity</a>
-          </div>
         </div>
       </CardContent>
     </Card>
