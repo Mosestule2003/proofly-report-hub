@@ -1,31 +1,50 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api, Order, AdminMetrics } from '@/services/api';
 import { Evaluator } from '@/components/EvaluatorProfile';
-import notificationService from '@/utils/notificationService';
 
-// Import our new components
-import AdminHeader from '@/components/admin/AdminHeader';
-import KeyMetricsCards from '@/components/admin/KeyMetricsCards';
-import ChartsSection from '@/components/admin/ChartsSection';
-import ActivityCards from '@/components/admin/ActivityCards';
+// Import our components
+import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdminTopBar from '@/components/admin/AdminTopBar';
+import DashboardStats from '@/components/admin/DashboardStats';
+import SalesChart from '@/components/admin/SalesChart';
+import CostBreakdown from '@/components/admin/CostBreakdown';
+import LastTransactions from '@/components/admin/LastTransactions';
+import PendingInquiries from '@/components/admin/PendingInquiries';
+
+// Import existing order detail components
 import PendingOrders from '@/components/admin/PendingOrders';
 import InProgressOrders from '@/components/admin/InProgressOrders';
 import CompletedOrders from '@/components/admin/CompletedOrders';
 
+// Import tracker for current order view
+import PropertyEvaluationTracker from '@/components/PropertyEvaluationTracker';
+
+// Tabs and dialog components
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  
+  // State
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [viewingOrderDetails, setViewingOrderDetails] = useState(false);
+  
+  // Calculate total earnings from completed orders
+  const totalEarnings = orders
+    .filter(order => order.status === 'Report Ready')
+    .reduce((sum, order) => sum + order.totalPrice, 0);
   
   // Protect route - only admins can access
   useEffect(() => {
@@ -60,7 +79,6 @@ const Admin: React.FC = () => {
         setMetrics(adminMetrics);
         setEvaluators(allEvaluators);
         
-        console.log(`Admin dashboard loaded with ${allOrders.length} orders and ${allEvaluators.length} evaluators`);
       } catch (error) {
         console.error('Error loading admin data:', error);
         toast.error("Failed to load admin data");
@@ -75,11 +93,8 @@ const Admin: React.FC = () => {
     const unsubscribe = api.subscribeToAdminUpdates((data) => {
       // Handle different types of updates
       if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED' || data.type === 'ORDER_STEP_UPDATE') {
-        console.log('Admin received update:', data);
-        
         // Refresh orders
         api.getOrders().then(updatedOrders => {
-          console.log(`Admin dashboard refreshed with ${updatedOrders.length} orders`);
           setOrders(updatedOrders);
         });
         
@@ -101,6 +116,14 @@ const Admin: React.FC = () => {
     };
   }, [user]);
   
+  // Filter orders by search term
+  const filteredOrders = orders.filter(order => 
+    order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    order.properties.some(p => p.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (order.agentContact?.name && order.agentContact.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+  
+  // Handle order status updates
   const handleUpdateStatus = async (orderId: string, newStatus: 'Evaluator Assigned' | 'In Progress') => {
     try {
       const updatedOrder = await api.updateOrderStatus(orderId, newStatus);
@@ -112,16 +135,6 @@ const Admin: React.FC = () => {
           )
         );
         
-        // Create and broadcast a notification to the user
-        notificationService.broadcast({
-          id: crypto.randomUUID(),
-          title: `Order ${newStatus}`,
-          message: `Your order #${orderId.substring(0, 8)} has been updated to ${newStatus}`,
-          date: new Date(),
-          read: false,
-          type: 'info',
-        });
-        
         toast.success(`Order status updated to ${newStatus}`);
       }
     } catch (error) {
@@ -130,6 +143,7 @@ const Admin: React.FC = () => {
     }
   };
   
+  // Handle order step advancement
   const handleAdvanceOrderStep = async (orderId: string) => {
     try {
       const updatedOrder = await api.advanceOrderStep(orderId);
@@ -142,17 +156,12 @@ const Admin: React.FC = () => {
           )
         );
         
-        // Broadcast notification to the user about the status change
-        notificationService.broadcast({
-          id: crypto.randomUUID(),
-          title: `Order Step Updated`,
-          message: `Your order #${orderId.substring(0, 8)} has advanced to the next step`,
-          date: new Date(),
-          read: false,
-          type: 'info',
-        });
-        
         toast.success(`Advanced order to next step`);
+        
+        // If viewing this order, update the selected order
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder(updatedOrder);
+        }
       }
     } catch (error) {
       console.error('Error advancing order step:', error);
@@ -160,6 +169,7 @@ const Admin: React.FC = () => {
     }
   };
   
+  // Handle report submission
   const handleSubmitReport = async (orderId: string, comments: string, imageUrl: string, videoUrl: string) => {
     try {
       await api.createReport(
@@ -179,16 +189,6 @@ const Admin: React.FC = () => {
         );
       }
       
-      // Notify the user about report completion
-      notificationService.broadcast({
-        id: crypto.randomUUID(),
-        title: "Report Completed",
-        message: `The evaluation report for order #${orderId.substring(0, 8)} is now ready to view.`,
-        date: new Date(),
-        read: false,
-        type: 'success',
-      });
-      
       toast.success("Report submitted successfully");
     } catch (error) {
       console.error('Error submitting report:', error);
@@ -197,11 +197,16 @@ const Admin: React.FC = () => {
     }
   };
   
-  const filteredOrders = orders.filter(order => 
-    order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    order.properties.some(p => p.address.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // View transaction details
+  const handleViewTransaction = (orderId: string) => {
+    const order = orders.find(order => order.id === orderId);
+    if (order) {
+      setSelectedOrder(order);
+      setViewingOrderDetails(true);
+    }
+  };
   
+  // Loading state
   if (isLoading) {
     return (
       <div className="container py-20 flex justify-center">
@@ -220,71 +225,112 @@ const Admin: React.FC = () => {
   
   return (
     <div className="bg-background min-h-screen">
-      <div className="container py-6">
-        {/* Header */}
-        <AdminHeader 
-          userName={user?.name} 
-          searchTerm={searchTerm} 
-          setSearchTerm={setSearchTerm}
-        />
-        
-        {/* Key Metrics */}
-        <KeyMetricsCards orders={orders} />
-        
-        {/* Charts Section */}
-        <ChartsSection />
-        
-        {/* Recent Activity Sections */}
-        <ActivityCards completedOrders={completedOrders} />
-        
-        {/* Order Management */}
-        <Tabs defaultValue="pending" className="space-y-4 mt-8">
-          <TabsList>
-            <TabsTrigger value="pending" className="relative">
-              Pending Orders
-              {pendingOrders.length > 0 && (
-                <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 min-w-[20px] inline-flex items-center justify-center px-1">
-                  {pendingOrders.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="assigned" className="relative">
-              In Progress
-              {assignedOrders.length > 0 && (
-                <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 min-w-[20px] inline-flex items-center justify-center px-1">
-                  {assignedOrders.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="completed">
-              Completed
-            </TabsTrigger>
-          </TabsList>
+      {/* Left sidebar */}
+      <AdminSidebar />
+      
+      {/* Main content area */}
+      <div className="pl-64 min-h-screen">
+        <div className="container py-6">
+          {/* Top bar */}
+          <AdminTopBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
           
-          <TabsContent value="pending">
-            <PendingOrders 
-              pendingOrders={pendingOrders}
-              evaluators={evaluators}
-              onUpdateStatus={handleUpdateStatus}
-            />
-          </TabsContent>
+          {/* Stats cards */}
+          <DashboardStats 
+            totalOrders={orders.length} 
+            completedEvaluations={completedOrders.length}
+            totalEarnings={totalEarnings}
+          />
           
-          <TabsContent value="assigned">
-            <InProgressOrders 
-              assignedOrders={assignedOrders}
-              onUpdateStatus={handleUpdateStatus}
-              onAdvanceOrderStep={handleAdvanceOrderStep}
-              onSubmitReport={handleSubmitReport}
-            />
-          </TabsContent>
+          {/* Charts and transactions section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <SalesChart />
+            <CostBreakdown />
+          </div>
           
-          <TabsContent value="completed">
-            <CompletedOrders
-              completedOrders={completedOrders}
+          {/* Transactions and inquiries section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <LastTransactions 
+              transactions={orders} 
+              onViewTransaction={handleViewTransaction}
             />
-          </TabsContent>
-        </Tabs>
+            <PendingInquiries />
+          </div>
+          
+          {/* Order Management */}
+          <Tabs defaultValue="pending" className="space-y-4 mt-8">
+            <TabsList>
+              <TabsTrigger value="pending" className="relative">
+                Pending Orders
+                {pendingOrders.length > 0 && (
+                  <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 min-w-[20px] inline-flex items-center justify-center px-1">
+                    {pendingOrders.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="assigned" className="relative">
+                In Progress
+                {assignedOrders.length > 0 && (
+                  <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 min-w-[20px] inline-flex items-center justify-center px-1">
+                    {assignedOrders.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="completed">
+                Completed
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="pending">
+              <PendingOrders 
+                pendingOrders={pendingOrders}
+                evaluators={evaluators}
+                onUpdateStatus={handleUpdateStatus}
+              />
+            </TabsContent>
+            
+            <TabsContent value="assigned">
+              <InProgressOrders 
+                assignedOrders={assignedOrders}
+                onUpdateStatus={handleUpdateStatus}
+                onAdvanceOrderStep={handleAdvanceOrderStep}
+                onSubmitReport={handleSubmitReport}
+              />
+            </TabsContent>
+            
+            <TabsContent value="completed">
+              <CompletedOrders
+                completedOrders={completedOrders}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
+      
+      {/* Order detail dialog */}
+      <Dialog open={viewingOrderDetails} onOpenChange={setViewingOrderDetails}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Order #{selectedOrder?.id.substring(0, 8) || ''}</DialogTitle>
+          </DialogHeader>
+          
+          {selectedOrder && (
+            <div className="mt-4">
+              <PropertyEvaluationTracker order={selectedOrder} />
+              
+              <div className="mt-6 flex justify-end">
+                {selectedOrder.status !== 'Report Ready' && (
+                  <button 
+                    className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
+                    onClick={() => handleAdvanceOrderStep(selectedOrder.id)}
+                  >
+                    Advance to Next Step
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

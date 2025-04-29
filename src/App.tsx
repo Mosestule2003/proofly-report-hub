@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -46,13 +46,13 @@ const App = () => (
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
-                <footer className="bg-muted py-6 px-6 text-center text-sm text-muted-foreground">
+                <footer className="bg-muted py-6 px-6 border-t">
                   <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
                     <p>© 2025 Proofly. All rights reserved.</p>
                     <div className="mt-2 sm:mt-0">
-                      <a href="/admin/login" className="text-muted-foreground hover:text-foreground transition-colors">
+                      <Link to="/admin/login" className="text-primary font-medium hover:underline transition-colors">
                         Admin Login
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </footer>
