@@ -70,8 +70,10 @@ const Home: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 800));
     
     addProperty({
+      id: crypto.randomUUID(), // Generate a unique ID
       address: propertyInput,
       description: '',
+      price: 30, // Default price
       agentContact // Pass agent contact along with the property
     });
     
