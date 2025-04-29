@@ -16,6 +16,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
+import AdminOrders from "./pages/AdminOrders";
 import AdminLogin from "./pages/AdminLogin";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import NotFound from "./pages/NotFound";
@@ -41,6 +42,7 @@ const App = () => (
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/admin" element={<Admin />} />
+                    <Route path="/admin/orders" element={<AdminOrders />} />
                     <Route path="/admin/login" element={<AdminLogin />} />
                     <Route path="/checkout/success/:orderId" element={<CheckoutSuccess />} />
                     <Route path="*" element={<NotFound />} />

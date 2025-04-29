@@ -59,6 +59,10 @@ const AdminSidebar = () => {
             href={item.path} 
             icon={item.icon}
             active={location.pathname === item.path}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(item.path);
+            }}
           >
             {item.name}
           </SidebarNavItem>
