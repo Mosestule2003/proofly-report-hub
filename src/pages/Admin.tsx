@@ -15,6 +15,7 @@ import SalesChart from '@/components/admin/SalesChart';
 import CostBreakdown from '@/components/admin/CostBreakdown';
 import LastTransactions from '@/components/admin/LastTransactions';
 import PendingInquiries from '@/components/admin/PendingInquiries';
+import UsersList from '@/components/admin/UsersList';
 
 // Import existing order detail components
 import PendingOrders from '@/components/admin/PendingOrders';
@@ -245,6 +246,11 @@ const Admin: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <SalesChart />
             <CostBreakdown />
+          </div>
+          
+          {/* Users section */}
+          <div className="mb-6">
+            <UsersList />
           </div>
           
           {/* Transactions and inquiries section */}
