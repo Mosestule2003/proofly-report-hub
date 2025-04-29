@@ -47,9 +47,9 @@ const App = () => (
                   </Routes>
                 </main>
                 <footer className="bg-muted py-6 px-6 border-t">
-                  <div className="container mx-auto flex justify-center items-center space-x-4">
-                    <p>© 2025 Proofly. All rights reserved.</p>
-                    <Link to="/admin/login" className="text-primary font-medium hover:underline transition-colors">
+                  <div className="container mx-auto flex justify-center items-center">
+                    <p className="mr-3">© 2025 Proofly. All rights reserved.</p>
+                    <Link to="/admin/login" className="text-primary font-medium hover:underline transition-colors border-l pl-3 border-muted-foreground/30">
                       Admin Login
                     </Link>
                   </div>
