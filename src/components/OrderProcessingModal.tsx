@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StarIcon } from 'lucide-react';
+import { Property } from '@/context/CartContext';
 
 interface Evaluator {
   id: string;
@@ -16,10 +17,13 @@ interface Evaluator {
   rating: number;
   properties: number;
   experience: string;
+  evaluationsCompleted: number; // Added missing property
+  bio: string; // Added missing property
+  avatarUrl?: string; // Optional for compatibility
 }
 
 interface OrderProcessingModalProps {
-  properties: Array<{ id: string; address: string }>;
+  properties: Property[];
   onComplete: () => void;
 }
 
@@ -50,9 +54,12 @@ const OrderProcessingModal: React.FC<OrderProcessingModalProps> = ({ properties,
         id: "e123",
         name: "Alex Johnson",
         avatar: "/placeholder.svg",
+        avatarUrl: "/placeholder.svg", // For compatibility
         rating: 4.8,
         properties: 352,
-        experience: "5 years"
+        experience: "5 years",
+        evaluationsCompleted: 352, // Added missing property
+        bio: "Professional property evaluator with 7+ years of experience. Specialized in residential properties." // Added missing property
       });
     }
     

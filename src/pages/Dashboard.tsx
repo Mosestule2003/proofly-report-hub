@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +24,8 @@ import { api, Order, Report, OrderStepStatus } from '@/services/api';
 import { format } from 'date-fns';
 import PropertyMap from '@/components/PropertyMap';
 import EvaluatorProfile from '@/components/EvaluatorProfile';
-import NotificationBell, { Notification } from '@/components/NotificationBell';
+import NotificationBell from '@/components/NotificationBell';
+import PropertyEvaluationTracker from '@/components/PropertyEvaluationTracker';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -512,101 +512,7 @@ const Dashboard: React.FC = () => {
                     </div>
                   )
                 ) : (
-                  <div className="py-8">
-                    <div className="border border-dashed rounded-lg p-6 bg-muted/30">
-                      <div className="text-center mb-6">
-                        <Clock className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-                        <h3 className="text-lg font-medium mb-1">Evaluation in progress</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {getOrderStepMessage(selectedOrder)}
-                        </p>
-                      </div>
-                      
-                      {/* Progress indicator */}
-                      <div className="mb-6 relative">
-                        <div className="h-1 bg-muted-foreground/20 rounded-full mb-2">
-                          <div 
-                            className="h-1 bg-primary rounded-full transition-all duration-500"
-                            style={{ width: `${(getCurrentStepNumber(selectedOrder) / 5) * 100}%` }}
-                          ></div>
-                        </div>
-                        
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>Finding Evaluator</span>
-                          <span>Evaluation</span>
-                          <span>Report Ready</span>
-                        </div>
-                      </div>
-                      
-                      {/* Show evaluator if assigned */}
-                      {selectedOrder.evaluator && selectedOrder.status !== 'Pending' && (
-                        <div className="mb-6">
-                          <h4 className="font-medium text-sm mb-2">Your Evaluator</h4>
-                          <EvaluatorProfile evaluator={selectedOrder.evaluator} />
-                        </div>
-                      )}
-                      
-                      {/* Enhanced map for in-progress evaluations */}
-                      {selectedOrder.currentStep && 
-                       selectedOrder.currentStep !== 'PENDING_MATCH' && 
-                       selectedOrder.currentStep !== 'REPORT_READY' && 
-                       selectedOrder.currentPropertyIndex !== undefined && (
-                        <div className="mb-6">
-                          <p className="font-medium text-sm mb-2 flex items-center">
-                            <MapPin className="h-4 w-4 mr-1 text-primary" />
-                            Live Tracking
-                          </p>
-                          
-                          <PropertyMap 
-                            properties={selectedOrder.properties}
-                            currentPropertyIndex={selectedOrder.currentPropertyIndex}
-                            currentStep={getMapStepNumber(selectedOrder.currentStep)}
-                            evaluator={selectedOrder.evaluator}
-                            className="h-64"
-                            showAllProperties={true}
-                          />
-                          
-                          <div className="mt-4">
-                            <h4 className="font-medium text-sm mb-2">Properties in this Order</h4>
-                            <div className="space-y-2">
-                              {selectedOrder.properties.map((property, index) => (
-                                <div 
-                                  key={property.id} 
-                                  className={`border rounded p-2 flex justify-between items-center ${
-                                    index === selectedOrder.currentPropertyIndex ? 'bg-primary/5 border-primary' : ''
-                                  }`}
-                                >
-                                  <div className="flex items-center">
-                                    <div className={`h-2 w-2 rounded-full mr-2 ${
-                                      index < (selectedOrder.currentPropertyIndex || 0) ? 'bg-green-500' : 
-                                      index === (selectedOrder.currentPropertyIndex || 0) ? 'bg-primary animate-pulse' : 
-                                      'bg-muted-foreground/30'
-                                    }`}></div>
-                                    <span className={`text-sm ${
-                                      index === selectedOrder.currentPropertyIndex ? 'font-medium' : ''
-                                    }`}>
-                                      {property.address.split(',')[0]}
-                                    </span>
-                                  </div>
-                                  <Badge variant={index === selectedOrder.currentPropertyIndex ? "default" : "outline"} className="text-xs">
-                                    {index < (selectedOrder.currentPropertyIndex || 0) ? 'Completed' : 
-                                     index === (selectedOrder.currentPropertyIndex || 0) ? 'Current' : 
-                                     'Pending'}
-                                  </Badge>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="text-center">
-                        <Button onClick={() => navigate('/')}>
-                          Request Another Evaluation
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                  <PropertyEvaluationTracker order={selectedOrder} />
                 )}
               </CardContent>
             </Card>
