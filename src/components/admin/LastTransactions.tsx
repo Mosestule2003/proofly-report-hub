@@ -4,18 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Calendar, CircleDollarSign, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-
-interface Transaction {
-  id: string;
-  date: string;
-  status: string;
-  totalPrice: number;
-  properties: Array<{ address: string }>;
-  // Additional properties as needed
-}
+import { Order } from '@/services/api';
 
 interface LastTransactionsProps {
-  transactions: Transaction[];
+  transactions: Order[];
   onViewTransaction: (id: string) => void;
   className?: string;
 }
@@ -27,7 +19,7 @@ const LastTransactions: React.FC<LastTransactionsProps> = ({
 }) => {
   // Get the 5 most recent transactions
   const recentTransactions = [...transactions]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
     
   return (
@@ -65,7 +57,7 @@ const LastTransactions: React.FC<LastTransactionsProps> = ({
                     <div className="flex items-center gap-1 mt-1">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(transaction.date), 'MMM d, yyyy')}
+                        {format(new Date(transaction.createdAt), 'MMM d, yyyy')}
                       </span>
                     </div>
                   </div>
