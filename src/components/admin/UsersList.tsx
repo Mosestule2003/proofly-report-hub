@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,8 +32,11 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
         if (user?.role === 'admin') {
           const allUsers = await api.getAllUsers();
           
+          // Make sure we cast the API response to our local User interface
+          const typedUsers = allUsers as User[];
+          
           // Sort in LIFO order (newest first)
-          const sortedUsers = [...allUsers].sort((a, b) => {
+          const sortedUsers = [...typedUsers].sort((a, b) => {
             // Use optional chaining and nullish coalescing to handle possible undefined createdAt
             const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
             const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -55,8 +57,11 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
     // Listen for user updates (new registrations, etc.)
     const unsubscribe = api.subscribeToUserUpdates((data) => {
       if (data.type === 'USERS_UPDATED' && data.users) {
+        // Make sure we cast the API response to our local User interface
+        const typedUsers = data.users as User[];
+        
         // Sort in LIFO order (newest first)
-        const sortedUsers = [...data.users].sort((a, b) => {
+        const sortedUsers = [...typedUsers].sort((a, b) => {
           // Use optional chaining and nullish coalescing to handle possible undefined createdAt
           const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
