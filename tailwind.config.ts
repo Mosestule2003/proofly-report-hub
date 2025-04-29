@@ -62,6 +62,9 @@ export default {
           accent: "hsl(var(--sidebar-accent))",
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
         },
+        // Adding the missing Proofly color definitions
+        "proofly-purple": "#9b87f5",
+        "proofly-dark-purple": "#7055f5",
       },
       borderRadius: {
         lg: "var(--radius)",

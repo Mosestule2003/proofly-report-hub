@@ -1,98 +1,63 @@
-
-import React, { useState, useEffect } from 'react';
-import { Bell, BellRing, Check, Trash2, X } from 'lucide-react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+import React, { useState, useEffect, useRef } from 'react';
+import { Bell, CheckCircle, Info, X, AlertTriangle } from 'lucide-react';
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
 } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { toast } from "@/components/ui/use-toast"
+import { useNotificationsContext } from '@/context/NotificationsContext';
+import { cn, formatTimeToNow } from '@/lib/utils';
 
-// AppNotification interface to avoid conflict with browser's Notification API
 export interface AppNotification {
   id: string;
   title: string;
   message: string;
   date: Date;
   read: boolean;
-  type?: 'info' | 'success' | 'warning' | 'error';
+  type: 'info' | 'success' | 'warning' | 'error';
   actionUrl?: string;
 }
 
-interface NotificationBellProps {
-  notifications: AppNotification[];
-  onMarkAsRead: (id: string) => void;
-  onMarkAllAsRead: () => void;
-  onDelete?: (id: string) => void;
-  maxHeight?: string;
-  showPopoverArrow?: boolean;
+const icons = {
+  info: Info,
+  success: CheckCircle,
+  warning: AlertTriangle,
+  error: AlertTriangle,
 }
 
-const NotificationBell: React.FC<NotificationBellProps> = ({
-  notifications,
-  onMarkAsRead,
-  onMarkAllAsRead,
-  onDelete,
-  maxHeight = 'calc(100vh-100px)',
-  showPopoverArrow = false,
-}) => {
+const toastType = {
+  info: "default",
+  success: "success",
+  warning: "warning",
+  error: "destructive",
+}
+
+const NotificationBell: React.FC = () => {
+  const { notifications, markAsRead, clearNotification, clearAllNotifications, unreadCount } = useNotificationsContext();
   const [open, setOpen] = useState(false);
-  const [newNotificationReceived, setNewNotificationReceived] = useState(false);
-  const [animatingId, setAnimatingId] = useState<string | null>(null);
-  
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const buttonRef = useRef<HTMLButtonElement>(null);
   
   useEffect(() => {
-    // Check if there's a new unread notification that wasn't there before
-    const hasNewNotification = unreadCount > 0 && notifications.some(n => !n.read && new Date().getTime() - new Date(n.date).getTime() < 60000);
-    
-    if (hasNewNotification && !open) {
-      setNewNotificationReceived(true);
-      // Show toast for newest notification
-      const newestNotification = [...notifications]
-        .filter(n => !n.read)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-      
-      if (newestNotification) {
-        toast(newestNotification.title, {
-          description: newestNotification.message,
-          action: {
-            label: "View",
-            onClick: () => {
-              setOpen(true);
-              setNewNotificationReceived(false);
-              // Highlight the notification briefly when opened from toast
-              setAnimatingId(newestNotification.id);
-              setTimeout(() => setAnimatingId(null), 2000);
-            }
-          }
-        });
+    const handleClickOutside = (event: MouseEvent) => {
+      if (buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+        setOpen(false);
       }
-    }
-  }, [notifications, unreadCount, open]);
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
   
-  // When popover opens, stop animation
-  useEffect(() => {
-    if (open) {
-      setNewNotificationReceived(false);
-    }
-  }, [open]);
-  
-  const handleNotificationClick = (id: string) => {
-    onMarkAsRead(id);
-  };
-  
-  const getNotificationTypeColor = (type?: string) => {
-    switch (type) {
-      case 'success': return 'bg-green-500/20 text-green-600 border-green-500/20';
-      case 'warning': return 'bg-yellow-500/20 text-yellow-600 border-yellow-500/20';
-      case 'error': return 'bg-red-500/20 text-red-600 border-red-500/20';
-      case 'info':
-      default: return 'bg-primary/20 text-primary border-primary/20';
+  const handleNotificationClick = (notification: AppNotification) => {
+    markAsRead(notification.id);
+    if (notification.actionUrl) {
+      window.location.href = notification.actionUrl;
     }
   };
   
@@ -100,162 +65,74 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button 
-          variant="outline" 
-          size="icon"
-          className={`relative ${newNotificationReceived ? 'animate-pulse' : ''}`}
-          aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
+          variant="ghost" 
+          role="button"
+          aria-label="View notifications"
+          ref={buttonRef}
         >
-          {newNotificationReceived 
-            ? <BellRing className="h-5 w-5 text-primary" /> 
-            : <Bell className="h-5 w-5" />
-          }
+          <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge 
-              className={`absolute -top-1 -right-1 h-5 min-w-[20px] flex items-center justify-center p-0 ${
-                newNotificationReceived ? 'bg-primary' : ''
-              }`}
-            >
+            <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-white text-xs flex items-center justify-center">
               {unreadCount}
-            </Badge>
+            </div>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-80 p-0" 
-        align="end"
-        sideOffset={8}
-        style={{ maxHeight }}
-        withArrow={showPopoverArrow}
+        className="w-80" 
+        align="end" 
+        side="bottom"
+        sideOffset={10}
       >
-        <div className="flex items-center justify-between p-4">
-          <h4 className="font-medium">Notifications</h4>
-          {unreadCount > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onMarkAllAsRead}
-              className="h-8 text-xs"
-            >
-              Mark all as read
-            </Button>
-          )}
+        <div className="flex justify-between items-center">
+          <div className="text-sm font-medium">Notifications</div>
+          <Button variant="ghost" size="xs" onClick={clearAllNotifications}>
+            Mark all as read
+          </Button>
         </div>
-        <Separator />
-        <ScrollArea className="max-h-80">
-          {notifications.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
+        <ScrollArea className="h-[300px] pr-1">
+          {notifications.notifications.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground p-4">
               No notifications
             </div>
           ) : (
-            <div className="py-1">
-              {notifications.map(notification => (
-                <div 
+            notifications.notifications.map((notification) => {
+              const Icon = icons[notification.type] || Info;
+              return (
+                <div
                   key={notification.id}
-                  className={`border-b last:border-0 cursor-pointer hover:bg-accent/50 transition-colors ${
-                    !notification.read ? 'bg-accent/30' : ''
-                  } ${animatingId === notification.id ? 'animate-highlight bg-primary/10' : ''}`}
-                  onClick={() => handleNotificationClick(notification.id)}
+                  className={cn(
+                    "group flex items-center space-x-2 py-2 border-b last:border-b-0",
+                    notification.read ? "opacity-60" : "font-semibold"
+                  )}
                 >
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center">
-                        <h5 className="font-medium text-sm">{notification.title}</h5>
-                        {!notification.read && (
-                          <Badge className={`ml-2 px-1.5 py-0 text-[10px] ${getNotificationTypeColor(notification.type)}`}>
-                            New
-                          </Badge>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                        {formatDate(notification.date)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{notification.message}</p>
-                    <div className="flex justify-end mt-2">
-                      {!notification.read ? (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-6 text-xs px-2" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNotificationClick(notification.id);
-                          }}
-                        >
-                          <Check className="h-3 w-3 mr-1" />
-                          Mark as read
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground flex items-center">
-                          <Check className="h-3 w-3 mr-1 text-green-500" />
-                          Read
-                        </span>
-                      )}
-                      
-                      {onDelete && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-6 text-xs px-2 ml-2 text-red-500 hover:text-red-600 hover:bg-red-50" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(notification.id);
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          <span className="sr-only">Delete notification</span>
-                        </Button>
-                      )}
-                    </div>
-                    
-                    {notification.actionUrl && (
-                      <div className="mt-2 text-right">
-                        <Button 
-                          variant="link" 
-                          size="sm" 
-                          className="h-6 p-0 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(notification.actionUrl, '_blank');
-                          }}
-                        >
-                          View Details →
-                        </Button>
-                      </div>
-                    )}
+                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="flex flex-col space-y-1 leading-none">
+                    <p className="text-sm">{notification.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {notification.message}
+                    </p>
+                    <time className="text-xs text-blue-600">
+                      {formatTimeToNow(notification.date)}
+                    </time>
+                  </div>
+                  <div className="ml-auto">
+                    <Button 
+                      variant="ghost" 
+                      size="xs" 
+                      onClick={() => clearNotification(notification.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })
           )}
         </ScrollArea>
-        {notifications.length > 0 && (
-          <div className="p-2 flex justify-center border-t">
-            <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
-              <X className="h-4 w-4 mr-1" />
-              Close
-            </Button>
-          </div>
-        )}
       </PopoverContent>
     </Popover>
   );
-};
-
-const formatDate = (date: Date): string => {
-  const now = new Date();
-  const inputDate = new Date(date);
-  const diffMs = now.getTime() - inputDate.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-  
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  
-  return inputDate.toLocaleDateString();
 };
 
 export default NotificationBell;
