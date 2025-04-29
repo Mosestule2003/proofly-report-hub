@@ -3,12 +3,21 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/context/AuthContext';
-import { api, User } from '@/services/api';
+import { api } from '@/services/api';
 import { Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface UsersListProps {
   className?: string;
+}
+
+// Define a local User interface that includes the createdAt property
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt?: string; // Make it optional since some users might not have it
 }
 
 const UsersList: React.FC<UsersListProps> = ({ className }) => {
