@@ -79,11 +79,17 @@ const CheckoutSuccess: React.FC = () => {
     );
   }
   
+  // Ensure all properties have an id (required for OrderProcessingModal)
+  const propertiesWithIds = order.properties.map(prop => ({
+    id: prop.id || crypto.randomUUID(),
+    address: prop.address
+  }));
+  
   return (
     <>
       {showProcessing && (
         <OrderProcessingModal 
-          properties={order.properties} 
+          properties={propertiesWithIds} 
           onComplete={handleProcessingComplete} 
         />
       )}
