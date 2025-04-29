@@ -8,7 +8,7 @@ export interface Property {
   description: string;
   price: number;
   agentContact?: AgentContact;
-  landlordInfo?: LandlordInfo;
+  landlordInfo: LandlordInfo; // Now required
 }
 
 export interface LandlordInfo {
@@ -42,6 +42,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     // Set default price if not provided
     if (!property.price) {
       property.price = 30; // Default price
+    }
+    
+    // Validate that landlord info is present
+    if (!property.landlordInfo || !property.landlordInfo.name || !property.landlordInfo.email || !property.landlordInfo.phone) {
+      console.error("Cannot add property without complete landlord information");
+      return;
     }
     
     setProperties([...properties, property]);

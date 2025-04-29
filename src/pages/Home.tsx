@@ -1,25 +1,109 @@
 
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
-import { Search, Building, ShieldCheck, Phone, MapPin } from 'lucide-react';
+import { Search, Building, ShieldCheck, Phone, MapPin, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { AgentContact } from '@/services/api';
+import { useLoadScript } from '@react-google-maps/api';
+import { toast } from 'sonner';
+
+const libraries = ['places'] as const;
 
 const Home: React.FC = () => {
   const { addProperty } = useCart();
   const [propertyInput, setPropertyInput] = useState('');
+  const [formattedAddress, setFormattedAddress] = useState('');
   const [agentName, setAgentName] = useState('');
   const [agentEmail, setAgentEmail] = useState('');
   const [agentPhone, setAgentPhone] = useState('');
   const [agentCompany, setAgentCompany] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showAgentFields, setShowAgentFields] = useState(false);
+  const [showAgentFields, setShowAgentFields] = useState(true); // Always shown by default
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const autoCompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  
+  // Load Google Maps API
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: "AIzaSyBx6uFvT7K52tRTTHZ9OmSh8WPimMShU58", // This should be replaced with your actual API key
+    libraries,
+  });
 
+  // Setup autocomplete when the script is loaded
+  useEffect(() => {
+    if (!isLoaded || !inputRef.current) return;
+    
+    // Initialize autocomplete
+    autoCompleteRef.current = new google.maps.places.Autocomplete(
+      inputRef.current, 
+      { 
+        types: ['address'],
+        componentRestrictions: { country: 'us' } 
+      }
+    );
+    
+    // Add place_changed listener
+    autoCompleteRef.current.addListener('place_changed', () => {
+      const place = autoCompleteRef.current?.getPlace();
+      if (place && place.formatted_address) {
+        setPropertyInput(place.formatted_address);
+        setFormattedAddress(place.formatted_address);
+        validateField('property', place.formatted_address);
+      }
+    });
+    
+    return () => {
+      // Clean up listener when component unmounts
+      google.maps.event.clearInstanceListeners(autoCompleteRef.current!);
+    };
+  }, [isLoaded]);
+
+  // Validate a specific field
+  const validateField = (field: string, value: string): boolean => {
+    const newErrors = { ...errors };
+    
+    switch (field) {
+      case 'property':
+        if (!value.trim()) {
+          newErrors.property = "Property address is required";
+        } else {
+          delete newErrors.property;
+        }
+        break;
+      case 'agentName':
+        if (!value.trim()) {
+          newErrors.agentName = "Agent/landlord name is required";
+        } else {
+          delete newErrors.agentName;
+        }
+        break;
+      case 'agentEmail':
+        if (!value.trim()) {
+          newErrors.agentEmail = "Email is required";
+        } else if (!/\S+@\S+\.\S+/.test(value)) {
+          newErrors.agentEmail = "Email is invalid";
+        } else {
+          delete newErrors.agentEmail;
+        }
+        break;
+      case 'agentPhone':
+        if (!value.trim()) {
+          newErrors.agentPhone = "Phone number is required";
+        } else {
+          delete newErrors.agentPhone;
+        }
+        break;
+    }
+    
+    setErrors(newErrors);
+    return !newErrors[field];
+  };
+
+  // Validate the entire form
   const validateForm = (): boolean => {
     const newErrors: {[key: string]: string} = {};
     
@@ -54,38 +138,61 @@ const Home: React.FC = () => {
     
     setIsLoading(true);
     
-    // Collect agent contact info if provided
-    let agentContact: AgentContact | undefined;
+    // Collect landlord info since it's required now
+    const landlordInfo = {
+      name: agentName,
+      email: agentEmail,
+      phone: agentPhone,
+      company: agentCompany || undefined
+    };
     
-    if (showAgentFields && agentName && agentEmail && agentPhone) {
-      agentContact = {
-        name: agentName,
-        email: agentEmail,
-        phone: agentPhone,
-        company: agentCompany || undefined
-      };
+    try {
+      // Simulate processing delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      addProperty({
+        id: crypto.randomUUID(),
+        address: propertyInput,
+        description: '',
+        price: 30, // Default price
+        landlordInfo // Always include landlord info
+      });
+      
+      // Show success notification
+      toast.success("Property added to cart", {
+        description: "You can view your cart to see the property details."
+      });
+      
+      // Reset form
+      setPropertyInput('');
+      setFormattedAddress('');
+      setAgentName('');
+      setAgentEmail('');
+      setAgentPhone('');
+      setAgentCompany('');
+      
+    } catch (error) {
+      toast.error("Failed to add property", {
+        description: "Please try again"
+      });
+      console.error("Error adding property:", error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    addProperty({
-      id: crypto.randomUUID(), // Generate a unique ID
-      address: propertyInput,
-      description: '',
-      price: 30, // Default price
-      agentContact // Pass agent contact along with the property
-    });
-    
-    // Reset form
-    setPropertyInput('');
-    setAgentName('');
-    setAgentEmail('');
-    setAgentPhone('');
-    setAgentCompany('');
-    setShowAgentFields(false);
-    setIsLoading(false);
   };
+
+  // Handle errors with Maps API loading
+  if (loadError) {
+    return (
+      <div className="flex flex-col min-h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="max-w-md text-center">
+          <h2 className="text-2xl font-bold mb-4">Error loading maps</h2>
+          <p className="mb-4">We couldn't load the Google Maps API. Please try refreshing the page.</p>
+          <Button onClick={() => window.location.reload()}>Refresh Page</Button>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
@@ -112,96 +219,129 @@ const Home: React.FC = () => {
                   </Label>
                   <div className="relative mt-1.5">
                     <MapPin className="absolute top-3 left-3 text-muted-foreground h-5 w-5" />
-                    <textarea
-                      id="property"
-                      className={`w-full p-3 pl-10 border rounded-lg h-24 focus:ring-2 focus:outline-none ${
-                        errors.property ? 'border-red-500 focus:ring-red-200' : 'focus:ring-primary focus:border-primary'
-                      }`}
-                      placeholder="Enter full property address here..."
-                      value={propertyInput}
-                      onChange={(e) => setPropertyInput(e.target.value)}
-                    />
+                    {!isLoaded ? (
+                      <div className="w-full p-3 pl-10 border rounded-lg h-24 bg-muted/20 flex items-center justify-center">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                        <span className="ml-2">Loading address search...</span>
+                      </div>
+                    ) : (
+                      <textarea
+                        id="property"
+                        ref={inputRef}
+                        className={`w-full p-3 pl-10 border rounded-lg h-24 focus:ring-2 focus:outline-none ${
+                          errors.property ? 'border-red-500 focus:ring-red-200' : 'focus:ring-primary focus:border-primary'
+                        }`}
+                        placeholder="Start typing an address..."
+                        value={propertyInput}
+                        onChange={(e) => {
+                          setPropertyInput(e.target.value);
+                          validateField('property', e.target.value);
+                        }}
+                      />
+                    )}
                   </div>
                   {errors.property && <p className="text-sm text-red-500 mt-1">{errors.property}</p>}
+                  {formattedAddress && (
+                    <div className="mt-2 p-2 bg-primary/5 border rounded text-sm">
+                      <p className="font-medium">Selected address:</p>
+                      <p>{formattedAddress}</p>
+                    </div>
+                  )}
                 </div>
                 
-                {/* Toggle for agent/landlord information */}
-                <div className="flex items-center my-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => setShowAgentFields(!showAgentFields)}
-                  >
-                    {showAgentFields ? 'Hide Agent/Landlord Info' : 'Add Agent/Landlord Info (Required)'}
-                  </Button>
-                </div>
-                
-                {/* Agent/Landlord information fields */}
-                {showAgentFields && (
-                  <div className="space-y-4 mt-2 p-4 bg-muted/30 rounded-lg border">
-                    <h3 className="font-medium">Agent/Landlord Information</h3>
-                    <Separator />
+                {/* Landlord information fields - now always visible */}
+                <div className="space-y-4 mt-2 p-4 bg-muted/30 rounded-lg border">
+                  <h3 className="font-medium">Landlord Information (Required)</h3>
+                  <Separator />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="agentName">
+                        Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="agentName"
+                        placeholder="Full name"
+                        value={agentName}
+                        onChange={(e) => {
+                          setAgentName(e.target.value);
+                          validateField('agentName', e.target.value);
+                        }}
+                        className={errors.agentName ? 'border-red-500' : ''}
+                      />
+                      {errors.agentName && <p className="text-sm text-red-500 mt-1">{errors.agentName}</p>}
+                    </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="agentName">Name</Label>
-                        <Input
-                          id="agentName"
-                          placeholder="Full name"
-                          value={agentName}
-                          onChange={(e) => setAgentName(e.target.value)}
-                          className={errors.agentName ? 'border-red-500' : ''}
-                        />
-                        {errors.agentName && <p className="text-sm text-red-500 mt-1">{errors.agentName}</p>}
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="agentEmail">Email</Label>
-                        <Input
-                          id="agentEmail"
-                          type="email"
-                          placeholder="email@example.com"
-                          value={agentEmail}
-                          onChange={(e) => setAgentEmail(e.target.value)}
-                          className={errors.agentEmail ? 'border-red-500' : ''}
-                        />
-                        {errors.agentEmail && <p className="text-sm text-red-500 mt-1">{errors.agentEmail}</p>}
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="agentPhone">Phone</Label>
-                        <Input
-                          id="agentPhone"
-                          placeholder="555-123-4567"
-                          value={agentPhone}
-                          onChange={(e) => setAgentPhone(e.target.value)}
-                          className={errors.agentPhone ? 'border-red-500' : ''}
-                        />
-                        {errors.agentPhone && <p className="text-sm text-red-500 mt-1">{errors.agentPhone}</p>}
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="agentCompany">Company (Optional)</Label>
-                        <Input
-                          id="agentCompany"
-                          placeholder="Company name"
-                          value={agentCompany}
-                          onChange={(e) => setAgentCompany(e.target.value)}
-                        />
-                      </div>
+                    <div>
+                      <Label htmlFor="agentEmail">
+                        Email <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="agentEmail"
+                        type="email"
+                        placeholder="email@example.com"
+                        value={agentEmail}
+                        onChange={(e) => {
+                          setAgentEmail(e.target.value);
+                          validateField('agentEmail', e.target.value);
+                        }}
+                        className={errors.agentEmail ? 'border-red-500' : ''}
+                      />
+                      {errors.agentEmail && <p className="text-sm text-red-500 mt-1">{errors.agentEmail}</p>}
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="agentPhone">
+                        Phone <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="agentPhone"
+                        placeholder="555-123-4567"
+                        value={agentPhone}
+                        onChange={(e) => {
+                          setAgentPhone(e.target.value);
+                          validateField('agentPhone', e.target.value);
+                        }}
+                        className={errors.agentPhone ? 'border-red-500' : ''}
+                      />
+                      {errors.agentPhone && <p className="text-sm text-red-500 mt-1">{errors.agentPhone}</p>}
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="agentCompany">
+                        Company (Optional)
+                      </Label>
+                      <Input
+                        id="agentCompany"
+                        placeholder="Company name"
+                        value={agentCompany}
+                        onChange={(e) => setAgentCompany(e.target.value)}
+                      />
                     </div>
                   </div>
-                )}
+                </div>
               </div>
               
               <Button 
                 type="submit" 
                 size="lg" 
                 className="mt-6 w-full"
-                disabled={!propertyInput.trim() || isLoading || (showAgentFields && (!agentName || !agentEmail || !agentPhone))}
+                disabled={
+                  isLoading || 
+                  !propertyInput.trim() || 
+                  !agentName.trim() || 
+                  !agentEmail.trim() || 
+                  !agentPhone.trim()
+                }
               >
-                {isLoading ? "Processing..." : "Add to Cart"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Add to Cart"
+                )}
               </Button>
             </div>
           </form>
