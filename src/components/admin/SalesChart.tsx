@@ -24,7 +24,7 @@ const SalesChart = () => {
         // If we have a user and they're an admin, load the sales data
         if (user?.role === 'admin') {
           const salesData = await api.getSalesData();
-          // Sort by date to ensure chronological order
+          // Set the data
           setData(salesData);
         }
       } catch (error) {
@@ -36,7 +36,9 @@ const SalesChart = () => {
     
     // Subscribe to real-time sales updates
     const unsubscribe = api.subscribeToSalesUpdates((updatedData) => {
-      setData(updatedData);
+      if (updatedData.type === 'SALES_UPDATED') {
+        setData(updatedData.sales);
+      }
     });
     
     // Cleanup subscription on unmount

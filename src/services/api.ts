@@ -1,9 +1,11 @@
-
 import { toast } from 'sonner';
 import { Property, LandlordInfo } from '@/context/CartContext';
-import { User, mockUsers } from '@/context/AuthContext';
+import { User as AuthUser, mockUsers } from '@/context/AuthContext';
 import { AppNotification } from '@/components/NotificationBell';
 import { Evaluator } from '@/components/EvaluatorProfile';
+
+// Re-export the User type for components to use
+export type User = AuthUser;
 
 export type OrderStatus = 'Pending' | 'Evaluator Assigned' | 'In Progress' | 'Report Ready';
 export type OrderStepStatus = 'PENDING_MATCH' | 'EN_ROUTE' | 'ARRIVED' | 'EVALUATING' | 'COMPLETED' | 'REPORT_READY';
@@ -46,10 +48,22 @@ export type AgentContact = {
   company?: string;
 };
 
+// Mock data for sales
+const mockSalesData = [
+  { name: 'Mon', amount: 120 },
+  { name: 'Tue', amount: 180 },
+  { name: 'Wed', amount: 200 },
+  { name: 'Thu', amount: 150 },
+  { name: 'Fri', amount: 230 },
+  { name: 'Sat', amount: 180 },
+  { name: 'Sun', amount: 120 },
+];
+
 // Mock data store
 let orders: Order[] = [];
 let reports: Report[] = [];
 let notifications: { [userId: string]: AppNotification[] } = {};
+let salesData = [...mockSalesData];
 let evaluators: Evaluator[] = [
   {
     id: 'eval1',
@@ -83,6 +97,8 @@ const webSocketListeners: { [key: string]: WebSocketCallback[] } = {
   'orders': [],
   'admin': [],
   'notifications': [],
+  'sales': [], // Add sales channel
+  'users': [], // Add users channel
 };
 
 const notifyWebSocketListeners = (channel: string, data: any) => {
@@ -171,6 +187,22 @@ export const api = {
     // Log the order creation for debugging
     console.log(`Order created for user ${userId}:`, newOrder);
     console.log(`Total orders in system: ${orders.length}`);
+    
+    // Update sales data when order is created
+    const today = new Date().getDay();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayName = dayNames[today];
+    
+    // Update sales data for today
+    const dayIndex = salesData.findIndex(item => item.name === dayName);
+    if (dayIndex !== -1) {
+      salesData[dayIndex].amount += totalPrice;
+    } else {
+      salesData.push({ name: dayName, amount: totalPrice });
+    }
+    
+    // Notify sales listeners
+    notifyWebSocketListeners('sales', { type: 'SALES_UPDATED', sales: salesData });
     
     return newOrder;
   },
@@ -533,6 +565,47 @@ export const api = {
     };
   },
   
+  // Sales data
+  getSalesData: async (): Promise<any[]> => {
+    // Simulate API delay
+    await new Promise(r => setTimeout(r, 600));
+    
+    return salesData;
+  },
+  
+  // Users methods
+  getAllUsers: async (): Promise<User[]> => {
+    // Simulate API delay
+    await new Promise(r => setTimeout(r, 500));
+    
+    return mockUsers;
+  },
+  
+  // New subscription methods
+  subscribeToSalesUpdates: (callback: WebSocketCallback) => {
+    webSocketListeners['sales'].push(callback);
+    
+    // Return an unsubscribe function
+    return () => {
+      const index = webSocketListeners['sales'].indexOf(callback);
+      if (index !== -1) {
+        webSocketListeners['sales'].splice(index, 1);
+      }
+    };
+  },
+  
+  subscribeToUserUpdates: (callback: WebSocketCallback) => {
+    webSocketListeners['users'].push(callback);
+    
+    // Return an unsubscribe function
+    return () => {
+      const index = webSocketListeners['users'].indexOf(callback);
+      if (index !== -1) {
+        webSocketListeners['users'].splice(index, 1);
+      }
+    };
+  },
+  
   // Initialize with some mock data for demo
   initMockData: (currentUser: User) => {
     if (orders.length > 0) {
@@ -672,6 +745,15 @@ export const api = {
           type: 'info'
         }
       ];
+    }
+    
+    // Simulate some initial sales data
+    if (currentUser.role === 'admin') {
+      // Notify sales listeners with initial data
+      notifyWebSocketListeners('sales', { type: 'SALES_UPDATED', sales: salesData });
+      
+      // Notify user listeners
+      notifyWebSocketListeners('users', { type: 'USERS_UPDATED', users: mockUsers });
     }
     
     console.log('Mock data initialized for', currentUser.role);

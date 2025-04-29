@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/context/AuthContext';
-import { api } from '@/services/api';
-import { User } from '@/services/api';
+import { api, User } from '@/services/api';
 import { Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -27,7 +26,7 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
           
           // Sort in LIFO order (newest first)
           const sortedUsers = [...allUsers].sort((a, b) => {
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            return new Date(b.createdAt || Date.now()).getTime() - new Date(a.createdAt || Date.now()).getTime();
           });
           
           setUsers(sortedUsers);
@@ -42,13 +41,15 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
     loadUsers();
     
     // Listen for user updates (new registrations, etc.)
-    const unsubscribe = api.subscribeToUserUpdates((updatedUsers) => {
-      // Sort in LIFO order (newest first)
-      const sortedUsers = [...updatedUsers].sort((a, b) => {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-      
-      setUsers(sortedUsers);
+    const unsubscribe = api.subscribeToUserUpdates((data) => {
+      if (data.type === 'USERS_UPDATED' && data.users) {
+        // Sort in LIFO order (newest first)
+        const sortedUsers = [...data.users].sort((a, b) => {
+          return new Date(b.createdAt || Date.now()).getTime() - new Date(a.createdAt || Date.now()).getTime();
+        });
+        
+        setUsers(sortedUsers);
+      }
     });
     
     // Cleanup subscription on unmount
@@ -95,7 +96,7 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={user.role === 'admin' ? "default" : "outline"}>
