@@ -188,11 +188,7 @@ const Dashboard: React.FC = () => {
       <div className="container max-w-4xl py-12">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">My Dashboard</h1>
-          <NotificationBell 
-            notifications={notifications} 
-            onMarkAsRead={handleMarkAsRead}
-            onMarkAllAsRead={handleMarkAllAsRead}
-          />
+          <NotificationBell />
         </div>
         
         <Card className="p-10 text-center">
@@ -278,11 +274,7 @@ const Dashboard: React.FC = () => {
     <div className="container py-12">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">My Dashboard</h1>
-        <NotificationBell 
-          notifications={notifications} 
-          onMarkAsRead={handleMarkAsRead}
-          onMarkAllAsRead={handleMarkAllAsRead}
-        />
+        <NotificationBell />
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

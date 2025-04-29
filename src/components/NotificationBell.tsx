@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCircle, Info, X, AlertTriangle } from 'lucide-react';
 import { 
   Popover, 
   PopoverContent, 
   PopoverTrigger 
-} from '@/components/ui/popover';
+} from '@/components/ui/custom-popover';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -37,7 +38,7 @@ const toastType = {
 }
 
 const NotificationBell: React.FC = () => {
-  const { notifications, markAsRead, clearNotification, clearAllNotifications, unreadCount } = useNotificationsContext();
+  const { notifications } = useNotificationsContext();
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   
@@ -55,7 +56,7 @@ const NotificationBell: React.FC = () => {
   }, []);
   
   const handleNotificationClick = (notification: AppNotification) => {
-    markAsRead(notification.id);
+    notifications.markAsRead(notification.id);
     if (notification.actionUrl) {
       window.location.href = notification.actionUrl;
     }
@@ -71,9 +72,9 @@ const NotificationBell: React.FC = () => {
           ref={buttonRef}
         >
           <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
+          {notifications.unreadCount > 0 && (
             <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-white text-xs flex items-center justify-center">
-              {unreadCount}
+              {notifications.unreadCount}
             </div>
           )}
         </Button>
@@ -83,10 +84,11 @@ const NotificationBell: React.FC = () => {
         align="end" 
         side="bottom"
         sideOffset={10}
+        withArrow
       >
         <div className="flex justify-between items-center">
           <div className="text-sm font-medium">Notifications</div>
-          <Button variant="ghost" size="xs" onClick={clearAllNotifications}>
+          <Button variant="ghost" size="sm" onClick={notifications.clearAllNotifications}>
             Mark all as read
           </Button>
         </div>
@@ -119,8 +121,8 @@ const NotificationBell: React.FC = () => {
                   <div className="ml-auto">
                     <Button 
                       variant="ghost" 
-                      size="xs" 
-                      onClick={() => clearNotification(notification.id)}
+                      size="sm" 
+                      onClick={() => notifications.clearNotification(notification.id)}
                     >
                       <X className="h-4 w-4" />
                     </Button>
