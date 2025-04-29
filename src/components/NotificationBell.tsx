@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Bell, BellRing, Check, X } from 'lucide-react';
+import { Bell, BellRing, Check, Trash2, X } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -10,29 +10,39 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
-// Rename to AppNotification to avoid conflict with browser's Notification API
+// AppNotification interface to avoid conflict with browser's Notification API
 export interface AppNotification {
   id: string;
   title: string;
   message: string;
   date: Date;
   read: boolean;
+  type?: 'info' | 'success' | 'warning' | 'error';
+  actionUrl?: string;
 }
 
 interface NotificationBellProps {
   notifications: AppNotification[];
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
+  onDelete?: (id: string) => void;
+  maxHeight?: string;
+  showPopoverArrow?: boolean;
 }
 
 const NotificationBell: React.FC<NotificationBellProps> = ({
   notifications,
   onMarkAsRead,
   onMarkAllAsRead,
+  onDelete,
+  maxHeight = 'calc(100vh-100px)',
+  showPopoverArrow = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [newNotificationReceived, setNewNotificationReceived] = useState(false);
+  const [animatingId, setAnimatingId] = useState<string | null>(null);
   
   const unreadCount = notifications.filter(n => !n.read).length;
   
@@ -55,6 +65,9 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
             onClick: () => {
               setOpen(true);
               setNewNotificationReceived(false);
+              // Highlight the notification briefly when opened from toast
+              setAnimatingId(newestNotification.id);
+              setTimeout(() => setAnimatingId(null), 2000);
             }
           }
         });
@@ -73,6 +86,16 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
     onMarkAsRead(id);
   };
   
+  const getNotificationTypeColor = (type?: string) => {
+    switch (type) {
+      case 'success': return 'bg-green-500/20 text-green-600 border-green-500/20';
+      case 'warning': return 'bg-yellow-500/20 text-yellow-600 border-yellow-500/20';
+      case 'error': return 'bg-red-500/20 text-red-600 border-red-500/20';
+      case 'info':
+      default: return 'bg-primary/20 text-primary border-primary/20';
+    }
+  };
+  
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -80,6 +103,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
           variant="outline" 
           size="icon"
           className={`relative ${newNotificationReceived ? 'animate-pulse' : ''}`}
+          aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
         >
           {newNotificationReceived 
             ? <BellRing className="h-5 w-5 text-primary" /> 
@@ -96,7 +120,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 max-h-[calc(100vh-100px)]" align="end">
+      <PopoverContent 
+        className="w-80 p-0" 
+        align="end"
+        sideOffset={8}
+        style={{ maxHeight }}
+        withArrow={showPopoverArrow}
+      >
         <div className="flex items-center justify-between p-4">
           <h4 className="font-medium">Notifications</h4>
           {unreadCount > 0 && (
@@ -111,59 +141,94 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
           )}
         </div>
         <Separator />
-        <div className="max-h-80 overflow-auto">
+        <ScrollArea className="max-h-80">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
               No notifications
             </div>
           ) : (
-            notifications.map(notification => (
-              <div 
-                key={notification.id}
-                className={`p-4 border-b last:border-0 cursor-pointer hover:bg-accent/50 transition-colors ${
-                  !notification.read ? 'bg-accent/30' : ''
-                }`}
-                onClick={() => handleNotificationClick(notification.id)}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center">
-                    <h5 className="font-medium text-sm">{notification.title}</h5>
-                    {!notification.read && (
-                      <Badge className="ml-2 bg-primary/20 text-primary border-primary/20 px-1.5 py-0 text-[10px]">
-                        New
-                      </Badge>
+            <div className="py-1">
+              {notifications.map(notification => (
+                <div 
+                  key={notification.id}
+                  className={`border-b last:border-0 cursor-pointer hover:bg-accent/50 transition-colors ${
+                    !notification.read ? 'bg-accent/30' : ''
+                  } ${animatingId === notification.id ? 'animate-highlight bg-primary/10' : ''}`}
+                  onClick={() => handleNotificationClick(notification.id)}
+                >
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center">
+                        <h5 className="font-medium text-sm">{notification.title}</h5>
+                        {!notification.read && (
+                          <Badge className={`ml-2 px-1.5 py-0 text-[10px] ${getNotificationTypeColor(notification.type)}`}>
+                            New
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                        {formatDate(notification.date)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{notification.message}</p>
+                    <div className="flex justify-end mt-2">
+                      {!notification.read ? (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 text-xs px-2" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleNotificationClick(notification.id);
+                          }}
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          Mark as read
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground flex items-center">
+                          <Check className="h-3 w-3 mr-1 text-green-500" />
+                          Read
+                        </span>
+                      )}
+                      
+                      {onDelete && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 text-xs px-2 ml-2 text-red-500 hover:text-red-600 hover:bg-red-50" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(notification.id);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span className="sr-only">Delete notification</span>
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {notification.actionUrl && (
+                      <div className="mt-2 text-right">
+                        <Button 
+                          variant="link" 
+                          size="sm" 
+                          className="h-6 p-0 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(notification.actionUrl, '_blank');
+                          }}
+                        >
+                          View Details →
+                        </Button>
+                      </div>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(notification.date)}
-                  </span>
                 </div>
-                <p className="text-sm text-muted-foreground">{notification.message}</p>
-                <div className="flex justify-end mt-2">
-                  {!notification.read ? (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 text-xs px-2" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNotificationClick(notification.id);
-                      }}
-                    >
-                      <Check className="h-3 w-3 mr-1" />
-                      Mark as read
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground flex items-center">
-                      <Check className="h-3 w-3 mr-1 text-green-500" />
-                      Read
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
-        </div>
+        </ScrollArea>
         {notifications.length > 0 && (
           <div className="p-2 flex justify-center border-t">
             <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
@@ -179,7 +244,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 
 const formatDate = (date: Date): string => {
   const now = new Date();
-  const diffMs = now.getTime() - new Date(date).getTime();
+  const inputDate = new Date(date);
+  const diffMs = now.getTime() - inputDate.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
@@ -189,7 +255,7 @@ const formatDate = (date: Date): string => {
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
   
-  return new Date(date).toLocaleDateString();
+  return inputDate.toLocaleDateString();
 };
 
 export default NotificationBell;

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { NotificationsProvider } from "@/context/NotificationsContext";
 
 // Pages
 import Home from "./pages/Home";
@@ -25,38 +26,40 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-grow">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<Signup />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/admin/login" element={<AdminLogin />} />
-                  <Route path="/checkout/success/:orderId" element={<CheckoutSuccess />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-              <footer className="bg-muted py-6 px-6 text-center text-sm text-muted-foreground">
-                <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
-                  <p>© 2025 Proofly. All rights reserved.</p>
-                  <div className="mt-2 sm:mt-0">
-                    <a href="/admin/login" className="text-muted-foreground hover:text-foreground transition-colors">
-                      Admin Login
-                    </a>
+        <NotificationsProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="flex-grow">
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/checkout/success/:orderId" element={<CheckoutSuccess />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+                <footer className="bg-muted py-6 px-6 text-center text-sm text-muted-foreground">
+                  <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
+                    <p>© 2025 Proofly. All rights reserved.</p>
+                    <div className="mt-2 sm:mt-0">
+                      <a href="/admin/login" className="text-muted-foreground hover:text-foreground transition-colors">
+                        Admin Login
+                      </a>
+                    </div>
                   </div>
-                </div>
-              </footer>
-            </div>
-          </BrowserRouter>
-        </TooltipProvider>
+                </footer>
+              </div>
+            </BrowserRouter>
+          </TooltipProvider>
+        </NotificationsProvider>
       </CartProvider>
     </AuthProvider>
   </QueryClientProvider>
