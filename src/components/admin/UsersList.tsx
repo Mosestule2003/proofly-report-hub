@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -61,9 +62,11 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
           });
           
           setUsers(sortedUsers);
+          console.log("Loaded users:", sortedUsers);
         }
       } catch (error) {
         console.error('Error loading users:', error);
+        toast.error('Failed to load users');
       } finally {
         setIsLoading(false);
       }
@@ -86,6 +89,7 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
         });
         
         setUsers(sortedUsers);
+        console.log("Updated users from subscription:", sortedUsers);
       }
     });
     

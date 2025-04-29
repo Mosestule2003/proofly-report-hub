@@ -38,8 +38,14 @@ const AdminUsers: React.FC = () => {
         // Initialize mock data
         api.initMockData(user);
         
+        console.log("Admin Users page: Initialized mock data");
+        
         // Wait a bit to simulate API call
         await new Promise(r => setTimeout(r, 500));
+        
+        // Make sure we trigger an update for all users
+        const allUsers = await api.getAllUsers();
+        console.log("Admin Users page: Retrieved users:", allUsers);
       } catch (error) {
         console.error('Error loading admin data:', error);
         toast.error("Failed to load admin data");
