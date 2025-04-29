@@ -39,7 +39,8 @@ const AdminLogin: React.FC = () => {
     
     try {
       // Initialize mock data first to ensure we have test accounts
-      await api.initMockData();
+      // Pass null since we don't have the current user yet
+      await api.initMockData(null);
       
       // Attempt login
       const success = await loginAdmin(email, password);
