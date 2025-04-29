@@ -3,19 +3,68 @@ import React, { useState, FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
-import { Search, Building, ShieldCheck } from 'lucide-react';
+import { Search, Building, ShieldCheck, Phone, MapPin } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { AgentContact } from '@/services/api';
 
 const Home: React.FC = () => {
   const { addProperty } = useCart();
   const [propertyInput, setPropertyInput] = useState('');
+  const [agentName, setAgentName] = useState('');
+  const [agentEmail, setAgentEmail] = useState('');
+  const [agentPhone, setAgentPhone] = useState('');
+  const [agentCompany, setAgentCompany] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showAgentFields, setShowAgentFields] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  const validateForm = (): boolean => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!propertyInput.trim()) {
+      newErrors.property = "Property address is required";
+    }
+    
+    if (showAgentFields) {
+      if (!agentName.trim()) {
+        newErrors.agentName = "Agent/landlord name is required";
+      }
+      
+      if (!agentEmail.trim()) {
+        newErrors.agentEmail = "Email is required";
+      } else if (!/\S+@\S+\.\S+/.test(agentEmail)) {
+        newErrors.agentEmail = "Email is invalid";
+      }
+      
+      if (!agentPhone.trim()) {
+        newErrors.agentPhone = "Phone number is required";
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleAddToCart = async (e: FormEvent) => {
     e.preventDefault();
     
-    if (!propertyInput.trim()) return;
+    if (!validateForm()) return;
     
     setIsLoading(true);
+    
+    // Collect agent contact info if provided
+    let agentContact: AgentContact | undefined;
+    
+    if (showAgentFields && agentName && agentEmail && agentPhone) {
+      agentContact = {
+        name: agentName,
+        email: agentEmail,
+        phone: agentPhone,
+        company: agentCompany || undefined
+      };
+    }
     
     // Simulate processing delay
     await new Promise(resolve => setTimeout(resolve, 800));
@@ -23,9 +72,16 @@ const Home: React.FC = () => {
     addProperty({
       address: propertyInput,
       description: '',
+      agentContact // Pass agent contact along with the property
     });
     
+    // Reset form
     setPropertyInput('');
+    setAgentName('');
+    setAgentEmail('');
+    setAgentPhone('');
+    setAgentCompany('');
+    setShowAgentFields(false);
     setIsLoading(false);
   };
   
@@ -46,23 +102,106 @@ const Home: React.FC = () => {
           </p>
           
           <form onSubmit={handleAddToCart} className="w-full max-w-2xl mx-auto">
-            <div className="relative">
-              <textarea
-                className="w-full p-4 pl-12 border rounded-lg h-24 focus:ring-2 focus:ring-primary focus:outline-none"
-                placeholder="Enter property address or description here..."
-                value={propertyInput}
-                onChange={(e) => setPropertyInput(e.target.value)}
-              />
-              <Search className="absolute top-4 left-4 text-muted-foreground h-5 w-5" />
+            <div className="bg-card border rounded-lg shadow-sm p-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="property" className="text-base font-medium">
+                    Property Address
+                  </Label>
+                  <div className="relative mt-1.5">
+                    <MapPin className="absolute top-3 left-3 text-muted-foreground h-5 w-5" />
+                    <textarea
+                      id="property"
+                      className={`w-full p-3 pl-10 border rounded-lg h-24 focus:ring-2 focus:outline-none ${
+                        errors.property ? 'border-red-500 focus:ring-red-200' : 'focus:ring-primary focus:border-primary'
+                      }`}
+                      placeholder="Enter full property address here..."
+                      value={propertyInput}
+                      onChange={(e) => setPropertyInput(e.target.value)}
+                    />
+                  </div>
+                  {errors.property && <p className="text-sm text-red-500 mt-1">{errors.property}</p>}
+                </div>
+                
+                {/* Toggle for agent/landlord information */}
+                <div className="flex items-center my-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => setShowAgentFields(!showAgentFields)}
+                  >
+                    {showAgentFields ? 'Hide Agent/Landlord Info' : 'Add Agent/Landlord Info (Required)'}
+                  </Button>
+                </div>
+                
+                {/* Agent/Landlord information fields */}
+                {showAgentFields && (
+                  <div className="space-y-4 mt-2 p-4 bg-muted/30 rounded-lg border">
+                    <h3 className="font-medium">Agent/Landlord Information</h3>
+                    <Separator />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="agentName">Name</Label>
+                        <Input
+                          id="agentName"
+                          placeholder="Full name"
+                          value={agentName}
+                          onChange={(e) => setAgentName(e.target.value)}
+                          className={errors.agentName ? 'border-red-500' : ''}
+                        />
+                        {errors.agentName && <p className="text-sm text-red-500 mt-1">{errors.agentName}</p>}
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="agentEmail">Email</Label>
+                        <Input
+                          id="agentEmail"
+                          type="email"
+                          placeholder="email@example.com"
+                          value={agentEmail}
+                          onChange={(e) => setAgentEmail(e.target.value)}
+                          className={errors.agentEmail ? 'border-red-500' : ''}
+                        />
+                        {errors.agentEmail && <p className="text-sm text-red-500 mt-1">{errors.agentEmail}</p>}
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="agentPhone">Phone</Label>
+                        <Input
+                          id="agentPhone"
+                          placeholder="555-123-4567"
+                          value={agentPhone}
+                          onChange={(e) => setAgentPhone(e.target.value)}
+                          className={errors.agentPhone ? 'border-red-500' : ''}
+                        />
+                        {errors.agentPhone && <p className="text-sm text-red-500 mt-1">{errors.agentPhone}</p>}
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="agentCompany">Company (Optional)</Label>
+                        <Input
+                          id="agentCompany"
+                          placeholder="Company name"
+                          value={agentCompany}
+                          onChange={(e) => setAgentCompany(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="mt-6 w-full"
+                disabled={!propertyInput.trim() || isLoading || (showAgentFields && (!agentName || !agentEmail || !agentPhone))}
+              >
+                {isLoading ? "Processing..." : "Add to Cart"}
+              </Button>
             </div>
-            <Button 
-              type="submit" 
-              size="lg" 
-              className="mt-4 w-full md:w-auto"
-              disabled={!propertyInput.trim() || isLoading}
-            >
-              {isLoading ? "Processing..." : "Add to Cart"}
-            </Button>
           </form>
         </motion.div>
       </section>

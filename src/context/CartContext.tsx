@@ -1,100 +1,71 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { toast } from 'sonner';
+import React, { createContext, useContext, useState } from 'react';
+import { AgentContact } from '@/services/api';
 
-export type Property = {
-  id: string;
+export interface Property {
+  id?: string;
   address: string;
   description: string;
-  price: number;
-};
+  price?: number;
+  agentContact?: AgentContact;
+}
 
-type CartContextType = {
+interface CartContextType {
   properties: Property[];
-  addProperty: (property: Omit<Property, 'id' | 'price'>) => void;
-  removeProperty: (id: string) => void;
+  addProperty: (property: Property) => void;
+  removeProperty: (index: number) => void;
   clearCart: () => void;
-  getTotalPrice: () => number;
-  getDiscount: () => number;
-};
+}
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const BASE_PRICE = 30; // Base price for evaluation in dollars
-
-export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [properties, setProperties] = useState<Property[]>(() => {
-    // Load from localStorage if available
-    const savedCart = localStorage.getItem('proofly-cart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
-
-  // Save to localStorage whenever properties change
-  useEffect(() => {
-    localStorage.setItem('proofly-cart', JSON.stringify(properties));
-  }, [properties]);
-
-  const addProperty = (property: Omit<Property, 'id' | 'price'>) => {
-    // Check if property already exists with similar address
-    const alreadyExists = properties.some(
-      p => p.address.toLowerCase() === property.address.toLowerCase()
-    );
-
-    if (alreadyExists) {
-      toast.warning("This property is already in your cart.");
-      return;
+export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+  const [properties, setProperties] = useState<Property[]>([]);
+  
+  const addProperty = (property: Property) => {
+    // Generate an ID if not provided
+    if (!property.id) {
+      property.id = crypto.randomUUID();
     }
-
-    // For now, use base price. In a real app, we'd calculate based on distance
-    const newProperty = {
-      ...property,
-      id: crypto.randomUUID(),
-      price: BASE_PRICE,
-    };
-
-    setProperties(prev => [...prev, newProperty]);
-    toast.success("Property added to cart!");
+    
+    // Set default price if not provided
+    if (!property.price) {
+      property.price = 30; // Default price
+    }
+    
+    setProperties([...properties, property]);
   };
-
-  const removeProperty = (id: string) => {
-    setProperties(prev => prev.filter(p => p.id !== id));
-    toast.info("Property removed from cart");
+  
+  const removeProperty = (index: number) => {
+    const updatedProperties = [...properties];
+    updatedProperties.splice(index, 1);
+    setProperties(updatedProperties);
   };
-
+  
   const clearCart = () => {
     setProperties([]);
   };
-
-  // Calculate total price with discount
-  const getTotalPrice = () => {
-    const subtotal = properties.reduce((total, property) => total + property.price, 0);
-    return subtotal - getDiscount();
+  
+  const value = {
+    properties,
+    addProperty,
+    removeProperty,
+    clearCart
   };
-
-  // Calculate discount (15% if more than 5 properties)
-  const getDiscount = () => {
-    const subtotal = properties.reduce((total, property) => total + property.price, 0);
-    return properties.length > 5 ? subtotal * 0.15 : 0;
-  };
-
+  
   return (
-    <CartContext.Provider value={{ 
-      properties, 
-      addProperty, 
-      removeProperty, 
-      clearCart, 
-      getTotalPrice, 
-      getDiscount 
-    }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );
 };
 
-export const useCart = (): CartContextType => {
+export const useCart = () => {
   const context = useContext(CartContext);
+  
   if (context === undefined) {
     throw new Error('useCart must be used within a CartProvider');
   }
+  
   return context;
 };

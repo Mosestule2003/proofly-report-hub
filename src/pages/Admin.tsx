@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,11 @@ import {
   ChevronUp,
   Clock,
   RefreshCw,
-  Users
+  Users,
+  User,
+  Phone,
+  Mail,
+  Briefcase
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -38,6 +43,7 @@ import { useAuth } from '@/context/AuthContext';
 import { api, Order, AdminMetrics } from '@/services/api';
 import AdminMetricsComponent from '@/components/AdminMetrics';
 import PropertyMap from '@/components/PropertyMap';
+import EvaluatorProfile, { Evaluator } from '@/components/EvaluatorProfile';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +54,8 @@ const Admin: React.FC = () => {
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [expandedProperties, setExpandedProperties] = useState<string[]>([]);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
+  const [selectedEvaluator, setSelectedEvaluator] = useState<string | null>(null);
   
   // Form state for report submission
   const [reportComments, setReportComments] = useState('');
@@ -64,7 +72,7 @@ const Admin: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate, isLoading]);
   
-  // Load orders and metrics
+  // Load orders, metrics and evaluators
   useEffect(() => {
     const loadData = async () => {
       if (!user || user.role !== 'admin') return;
@@ -78,16 +86,18 @@ const Admin: React.FC = () => {
         // Ensure all orders are visible to admin
         api.ensureOrdersVisibleToAdmin();
         
-        // Get all orders (admin has access to all)
-        const [allOrders, adminMetrics] = await Promise.all([
+        // Get all orders and data (admin has access to all)
+        const [allOrders, adminMetrics, allEvaluators] = await Promise.all([
           api.getOrders(), // No userId means get all orders
-          api.getAdminMetrics()
+          api.getAdminMetrics(),
+          api.getAllEvaluators()
         ]);
         
         setOrders(allOrders);
         setMetrics(adminMetrics);
+        setEvaluators(allEvaluators);
         
-        console.log(`Admin dashboard loaded with ${allOrders.length} orders`);
+        console.log(`Admin dashboard loaded with ${allOrders.length} orders and ${allEvaluators.length} evaluators`);
       } catch (error) {
         console.error('Error loading admin data:', error);
         toast.error("Failed to load admin data");
@@ -295,6 +305,7 @@ const Admin: React.FC = () => {
                         </div>
                       </CardHeader>
                       <CardContent className="pb-2">
+                        {/* Properties */}
                         <div className="space-y-3">
                           {order.properties.map(property => (
                             <div key={property.id} className="border rounded-md p-3">
@@ -331,13 +342,104 @@ const Admin: React.FC = () => {
                             </div>
                           ))}
                         </div>
+                        
+                        {/* Agent/Landlord Contact */}
+                        {order.agentContact && (
+                          <div className="mt-4">
+                            <h3 className="text-sm font-medium mb-2">Agent/Landlord Contact</h3>
+                            <div className="bg-muted/20 p-3 rounded-md border">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex items-center">
+                                  <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Name</p>
+                                    <p className="text-sm">{order.agentContact.name}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center">
+                                  <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Email</p>
+                                    <p className="text-sm">{order.agentContact.email}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center">
+                                  <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Phone</p>
+                                    <p className="text-sm">{order.agentContact.phone}</p>
+                                  </div>
+                                </div>
+                                
+                                {order.agentContact.company && (
+                                  <div className="flex items-center">
+                                    <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Company</p>
+                                      <p className="text-sm">{order.agentContact.company}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Evaluator Assignment */}
+                        <div className="mt-4">
+                          <h3 className="text-sm font-medium mb-2">Assign Evaluator</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {evaluators.map(evaluator => (
+                              <div 
+                                key={evaluator.id} 
+                                className={`border rounded-lg p-2 cursor-pointer transition-colors ${
+                                  selectedEvaluator === evaluator.id ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
+                                }`}
+                                onClick={() => setSelectedEvaluator(evaluator.id)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="h-8 w-8 rounded-full bg-muted overflow-hidden flex-shrink-0">
+                                    {evaluator.avatarUrl ? (
+                                      <img src={evaluator.avatarUrl} alt={evaluator.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                      <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary font-medium">
+                                        {evaluator.name.substring(0, 2)}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-sm">{evaluator.name}</p>
+                                    <div className="flex items-center">
+                                      <div className="flex">
+                                        {[...Array(5)].map((_, i) => (
+                                          <div key={i} className={`h-2 w-2 ${
+                                            i < Math.floor(evaluator.rating) ? 'bg-amber-500' : 'bg-muted'
+                                          } rounded-full mr-0.5`} />
+                                        ))}
+                                      </div>
+                                      <span className="text-xs text-muted-foreground ml-1">
+                                        {evaluator.rating.toFixed(1)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </CardContent>
                       <CardFooter>
                         <Button 
                           className="ml-auto" 
-                          onClick={() => handleUpdateStatus(order.id, 'Evaluator Assigned')}
+                          onClick={() => {
+                            handleUpdateStatus(order.id, 'Evaluator Assigned');
+                            setSelectedEvaluator(null);
+                          }}
+                          disabled={!selectedEvaluator}
                         >
-                          Accept Order
+                          Assign & Accept Order
                         </Button>
                       </CardFooter>
                     </Card>
@@ -403,6 +505,56 @@ const Admin: React.FC = () => {
                       </CardHeader>
                       <CardContent className={`pb-2 ${expandedOrder === order.id ? 'block' : 'hidden'}`}>
                         <div className="space-y-3 mb-4">
+                          {/* Assigned Evaluator */}
+                          {order.evaluator && (
+                            <div className="border rounded-md p-3 mb-4">
+                              <h4 className="font-medium mb-2">Assigned Evaluator</h4>
+                              <EvaluatorProfile evaluator={order.evaluator} />
+                            </div>
+                          )}
+                          
+                          {/* Agent/Landlord Contact */}
+                          {order.agentContact && (
+                            <div className="border rounded-md p-3 mb-4">
+                              <h4 className="font-medium mb-2">Agent/Landlord Contact</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex items-center">
+                                  <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Name</p>
+                                    <p className="text-sm">{order.agentContact.name}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center">
+                                  <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Email</p>
+                                    <p className="text-sm">{order.agentContact.email}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center">
+                                  <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Phone</p>
+                                    <p className="text-sm">{order.agentContact.phone}</p>
+                                  </div>
+                                </div>
+                                
+                                {order.agentContact.company && (
+                                  <div className="flex items-center">
+                                    <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Company</p>
+                                      <p className="text-sm">{order.agentContact.company}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
                           {/* Current progress */}
                           <div className="border rounded-md p-3">
                             <div className="flex justify-between items-center mb-2">
@@ -423,15 +575,20 @@ const Admin: React.FC = () => {
                                 
                                 {/* Map of current property */}
                                 <PropertyMap 
-                                  property={order.properties[order.currentPropertyIndex]}
+                                  properties={order.properties}
+                                  currentPropertyIndex={order.currentPropertyIndex}
                                   currentStep={
                                     order.currentStep === 'EN_ROUTE' ? 0 : 
                                     order.currentStep === 'ARRIVED' ? 1 : 
                                     order.currentStep === 'EVALUATING' ? 2 : 3
                                   }
+                                  evaluator={order.evaluator}
+                                  className="h-64"
+                                  showAllProperties={true}
+                                  interactive={true}
                                 />
                                 
-                                <div className="flex justify-between">
+                                <div className="flex justify-between mt-2">
                                   <p className="text-sm font-medium">
                                     {order.properties[order.currentPropertyIndex].address}
                                   </p>
@@ -450,29 +607,42 @@ const Admin: React.FC = () => {
                           </div>
                           
                           {/* All properties */}
-                          <p className="font-medium mt-4 mb-2">All Properties</p>
-                          {order.properties.map((property, index) => (
-                            <div key={property.id} className="border rounded-md p-3">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                  <div className={`h-2 w-2 rounded-full mr-2 ${
-                                    index < (order.currentPropertyIndex || 0) ? 'bg-green-500' : 
-                                    index === (order.currentPropertyIndex || 0) ? 'bg-primary animate-pulse' : 
-                                    'bg-muted-foreground/30'
-                                  }`}></div>
-                                  <p className="font-medium">{property.address}</p>
+                          <h4 className="font-medium mt-4 mb-2">All Properties</h4>
+                          <div className="space-y-2">
+                            {order.properties.map((property, index) => (
+                              <div 
+                                key={property.id} 
+                                className={`border rounded p-3 ${
+                                  index === order.currentPropertyIndex ? 'bg-primary/5 border-primary' : ''
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <div className={`h-2 w-2 rounded-full mr-2 ${
+                                      index < (order.currentPropertyIndex || 0) ? 'bg-green-500' : 
+                                      index === (order.currentPropertyIndex || 0) ? 'bg-primary animate-pulse' : 
+                                      'bg-muted-foreground/30'
+                                    }`}></div>
+                                    <span className={`${
+                                      index === order.currentPropertyIndex ? 'font-medium' : ''
+                                    }`}>
+                                      {property.address}
+                                    </span>
+                                  </div>
+                                  <Badge variant={index === order.currentPropertyIndex ? "default" : "outline"}>
+                                    {index < (order.currentPropertyIndex || 0) ? 'Completed' : 
+                                     index === (order.currentPropertyIndex || 0) ? 'Current' : 
+                                     'Pending'}
+                                  </Badge>
                                 </div>
-                                <span className="text-xs text-muted-foreground">
-                                  ${property.price}
-                                </span>
+                                {property.description && (
+                                  <p className="text-sm text-muted-foreground mt-2 ml-4">
+                                    {property.description}
+                                  </p>
+                                )}
                               </div>
-                              {property.description && (
-                                <p className="text-sm text-muted-foreground mt-1 ml-4">
-                                  {property.description}
-                                </p>
-                              )}
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       </CardContent>
                       <CardFooter className="flex justify-between gap-4">
@@ -603,6 +773,16 @@ const Admin: React.FC = () => {
                         </div>
                       </CardHeader>
                       <CardContent>
+                        {/* Assigned Evaluator */}
+                        {order.evaluator && (
+                          <div className="mb-4">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                              Evaluation by
+                            </h4>
+                            <EvaluatorProfile evaluator={order.evaluator} variant="compact" />
+                          </div>
+                        )}
+                        
                         <div className="flex items-center space-x-4 mb-4 text-sm">
                           <div className="flex items-center">
                             <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />

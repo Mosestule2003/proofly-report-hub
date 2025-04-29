@@ -17,12 +17,15 @@ import {
   FileImage,
   ExternalLink,
   MapPin,
-  Clock
+  Clock,
+  User
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api, Order, Report, OrderStepStatus } from '@/services/api';
 import { format } from 'date-fns';
 import PropertyMap from '@/components/PropertyMap';
+import EvaluatorProfile from '@/components/EvaluatorProfile';
+import NotificationBell, { Notification } from '@/components/NotificationBell';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -32,6 +35,7 @@ const Dashboard: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   
   // Protect route
   useEffect(() => {
@@ -40,9 +44,9 @@ const Dashboard: React.FC = () => {
     }
   }, [isAuthenticated, navigate, isLoading]);
   
-  // Load user orders
+  // Load user data (orders and notifications)
   useEffect(() => {
-    const loadOrders = async () => {
+    const loadUserData = async () => {
       if (!user) return;
       
       try {
@@ -52,6 +56,10 @@ const Dashboard: React.FC = () => {
         // Load orders for user
         const userOrders = await api.getOrders(user.id);
         setOrders(userOrders);
+        
+        // Load notifications
+        const userNotifications = await api.getNotifications(user.id);
+        setNotifications(userNotifications);
         
         if (userOrders.length > 0) {
           // Select first order by default
@@ -64,18 +72,19 @@ const Dashboard: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error('Error loading orders', error);
+        console.error('Error loading user data', error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadOrders();
+    loadUserData();
     
     // Subscribe to WebSocket updates for order status changes
     if (user) {
-      const unsubscribe = api.subscribeToOrders(user.id, (data) => {
-        console.log('WebSocket update:', data);
+      // Subscribe to order updates
+      const orderUnsubscribe = api.subscribeToOrders(user.id, (data) => {
+        console.log('WebSocket order update:', data);
         
         // Handle order updates
         if (data.type === 'ORDER_UPDATED' || data.type === 'ORDER_STEP_UPDATE') {
@@ -104,9 +113,26 @@ const Dashboard: React.FC = () => {
         }
       });
       
-      // Cleanup subscription on unmount
+      // Subscribe to notification updates
+      const notificationUnsubscribe = api.subscribeToNotifications(user.id, (data) => {
+        console.log('WebSocket notification update:', data);
+        
+        // Handle notification events
+        if (data.type === 'NEW_NOTIFICATION') {
+          setNotifications(prev => [data.notification, ...prev]);
+        } else if (data.type === 'NOTIFICATION_READ') {
+          setNotifications(prev => prev.map(
+            n => n.id === data.notificationId ? { ...n, read: true } : n
+          ));
+        } else if (data.type === 'ALL_NOTIFICATIONS_READ') {
+          setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        }
+      });
+      
+      // Cleanup subscriptions on unmount
       return () => {
-        unsubscribe();
+        orderUnsubscribe();
+        notificationUnsubscribe();
       };
     }
   }, [user, selectedOrder]);
@@ -134,6 +160,16 @@ const Dashboard: React.FC = () => {
     }
   };
   
+  const handleMarkAsRead = async (id: string) => {
+    if (!user) return;
+    await api.markNotificationAsRead(user.id, id);
+  };
+  
+  const handleMarkAllAsRead = async () => {
+    if (!user) return;
+    await api.markAllNotificationsAsRead(user.id);
+  };
+  
   // Show loading state
   if (isLoading) {
     return (
@@ -150,7 +186,14 @@ const Dashboard: React.FC = () => {
   if (orders.length === 0) {
     return (
       <div className="container max-w-4xl py-12">
-        <h1 className="text-3xl font-bold mb-6">My Dashboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">My Dashboard</h1>
+          <NotificationBell 
+            notifications={notifications} 
+            onMarkAsRead={handleMarkAsRead}
+            onMarkAllAsRead={handleMarkAllAsRead}
+          />
+        </div>
         
         <Card className="p-10 text-center">
           <div className="flex flex-col items-center justify-center py-10">
@@ -233,7 +276,14 @@ const Dashboard: React.FC = () => {
   
   return (
     <div className="container py-12">
-      <h1 className="text-3xl font-bold mb-6">My Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">My Dashboard</h1>
+        <NotificationBell 
+          notifications={notifications} 
+          onMarkAsRead={handleMarkAsRead}
+          onMarkAllAsRead={handleMarkAllAsRead}
+        />
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-4">
@@ -304,14 +354,62 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
                 
+                {/* Show agent/landlord contact if available */}
+                {selectedOrder.agentContact && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
+                    <div className="bg-muted/20 rounded-lg p-4 border">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Name</p>
+                          <p className="font-medium">{selectedOrder.agentContact.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="font-medium">{selectedOrder.agentContact.email}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Phone</p>
+                          <p className="font-medium">{selectedOrder.agentContact.phone}</p>
+                        </div>
+                        {selectedOrder.agentContact.company && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Company</p>
+                            <p className="font-medium">{selectedOrder.agentContact.company}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <h3 className="text-lg font-semibold mb-3">Properties</h3>
                 <div className="space-y-2 mb-6">
-                  {selectedOrder.properties.map((property) => (
-                    <div key={property.id} className="border rounded-md p-3">
-                      <p className="font-medium">{property.address}</p>
-                      {property.description && (
-                        <p className="text-sm text-muted-foreground">{property.description}</p>
-                      )}
+                  {selectedOrder.properties.map((property, index) => (
+                    <div key={property.id} className={`border rounded-md p-3 ${
+                      selectedOrder.currentPropertyIndex === index && 
+                      selectedOrder.currentStep !== 'PENDING_MATCH' && 
+                      selectedOrder.currentStep !== 'REPORT_READY' ? 
+                        'border-primary bg-primary/5' : ''
+                    }`}>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="flex items-center">
+                            <div className={`h-2 w-2 rounded-full mr-2 ${
+                              selectedOrder.currentStep === 'REPORT_READY' || 
+                              (selectedOrder.currentPropertyIndex !== undefined && 
+                               index < selectedOrder.currentPropertyIndex) ? 'bg-green-500' : 
+                              selectedOrder.currentPropertyIndex === index ? 'bg-primary animate-pulse' : 
+                              'bg-gray-300'
+                            }`}></div>
+                            <p className="font-medium">{property.address}</p>
+                          </div>
+                          {property.description && (
+                            <p className="text-sm text-muted-foreground mt-1 ml-4">{property.description}</p>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="ml-2">${property.price}</Badge>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -327,6 +425,16 @@ const Dashboard: React.FC = () => {
                   ) : report ? (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">Evaluation Report</h3>
+                      
+                      {/* Show evaluator if available */}
+                      {selectedOrder.evaluator && (
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                            Evaluated by
+                          </h4>
+                          <EvaluatorProfile evaluator={selectedOrder.evaluator} variant="compact" />
+                        </div>
+                      )}
                       
                       <Tabs defaultValue="comments">
                         <TabsList className="mb-4">
@@ -430,7 +538,15 @@ const Dashboard: React.FC = () => {
                         </div>
                       </div>
                       
-                      {/* Map for in-progress evaluations */}
+                      {/* Show evaluator if assigned */}
+                      {selectedOrder.evaluator && selectedOrder.status !== 'Pending' && (
+                        <div className="mb-6">
+                          <h4 className="font-medium text-sm mb-2">Your Evaluator</h4>
+                          <EvaluatorProfile evaluator={selectedOrder.evaluator} />
+                        </div>
+                      )}
+                      
+                      {/* Enhanced map for in-progress evaluations */}
                       {selectedOrder.currentStep && 
                        selectedOrder.currentStep !== 'PENDING_MATCH' && 
                        selectedOrder.currentStep !== 'REPORT_READY' && 
@@ -438,18 +554,49 @@ const Dashboard: React.FC = () => {
                         <div className="mb-6">
                           <p className="font-medium text-sm mb-2 flex items-center">
                             <MapPin className="h-4 w-4 mr-1 text-primary" />
-                            Current Location
+                            Live Tracking
                           </p>
                           
                           <PropertyMap 
-                            property={selectedOrder.properties[selectedOrder.currentPropertyIndex]} 
+                            properties={selectedOrder.properties}
+                            currentPropertyIndex={selectedOrder.currentPropertyIndex}
                             currentStep={getMapStepNumber(selectedOrder.currentStep)}
-                            className="h-48"
+                            evaluator={selectedOrder.evaluator}
+                            className="h-64"
+                            showAllProperties={true}
                           />
                           
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {selectedOrder.properties[selectedOrder.currentPropertyIndex].address}
-                          </p>
+                          <div className="mt-4">
+                            <h4 className="font-medium text-sm mb-2">Properties in this Order</h4>
+                            <div className="space-y-2">
+                              {selectedOrder.properties.map((property, index) => (
+                                <div 
+                                  key={property.id} 
+                                  className={`border rounded p-2 flex justify-between items-center ${
+                                    index === selectedOrder.currentPropertyIndex ? 'bg-primary/5 border-primary' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-center">
+                                    <div className={`h-2 w-2 rounded-full mr-2 ${
+                                      index < (selectedOrder.currentPropertyIndex || 0) ? 'bg-green-500' : 
+                                      index === (selectedOrder.currentPropertyIndex || 0) ? 'bg-primary animate-pulse' : 
+                                      'bg-muted-foreground/30'
+                                    }`}></div>
+                                    <span className={`text-sm ${
+                                      index === selectedOrder.currentPropertyIndex ? 'font-medium' : ''
+                                    }`}>
+                                      {property.address.split(',')[0]}
+                                    </span>
+                                  </div>
+                                  <Badge variant={index === selectedOrder.currentPropertyIndex ? "default" : "outline"} className="text-xs">
+                                    {index < (selectedOrder.currentPropertyIndex || 0) ? 'Completed' : 
+                                     index === (selectedOrder.currentPropertyIndex || 0) ? 'Current' : 
+                                     'Pending'}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       )}
                       
