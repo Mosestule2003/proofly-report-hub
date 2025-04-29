@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Map, MapPin } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface PropertyHeatmapProps {
   className?: string;
@@ -21,7 +22,7 @@ const PropertyHeatmap: React.FC<PropertyHeatmapProps> = ({ className }) => {
   }, []);
   
   return (
-    <Card className={className}>
+    <Card className={cn('', className)}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Map className="h-4 w-4" /> Property Heatmap

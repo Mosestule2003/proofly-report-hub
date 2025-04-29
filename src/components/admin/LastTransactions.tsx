@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Calendar, CircleDollarSign, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 
 interface Transaction {
   id: string;
@@ -29,6 +29,12 @@ const LastTransactions: React.FC<LastTransactionsProps> = ({
   const recentTransactions = [...transactions]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
+  
+  // Helper function to safely format dates
+  const safeFormatDate = (dateString: string, formatStr: string) => {
+    const date = new Date(dateString);
+    return isValid(date) ? format(date, formatStr) : 'Invalid date';
+  };
     
   return (
     <Card className={cn('', className)}>
@@ -65,7 +71,7 @@ const LastTransactions: React.FC<LastTransactionsProps> = ({
                     <div className="flex items-center gap-1 mt-1">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(transaction.date), 'MMM d, yyyy')}
+                        {safeFormatDate(transaction.date, 'MMM d, yyyy')}
                       </span>
                     </div>
                   </div>
