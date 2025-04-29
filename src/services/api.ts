@@ -64,6 +64,7 @@ let orders: Order[] = [];
 let reports: Report[] = [];
 let notifications: { [userId: string]: AppNotification[] } = {};
 let salesData = [...mockSalesData];
+let users = [...mockUsers]; // Use a local copy that can be modified
 let evaluators: Evaluator[] = [
   {
     id: 'eval1',
@@ -578,7 +579,83 @@ export const api = {
     // Simulate API delay
     await new Promise(r => setTimeout(r, 500));
     
-    return mockUsers;
+    return users;
+  },
+  
+  deleteUser: async (userId: string): Promise<boolean> => {
+    // Simulate API delay
+    await new Promise(r => setTimeout(r, 800));
+    
+    // Find user to delete
+    const userIndex = users.findIndex(u => u.id === userId);
+    
+    if (userIndex === -1) {
+      throw new Error('User not found');
+    }
+    
+    // Store user for reference
+    const deletedUser = users[userIndex];
+    
+    // Remove user from users array
+    users = users.filter(u => u.id !== userId);
+    
+    // Remove user orders
+    orders = orders.filter(order => {
+      if (order.userId === userId) {
+        // Find any reports associated with this order
+        reports = reports.filter(report => report.orderId !== order.id);
+        return false; // Remove this order
+      }
+      return true; // Keep other orders
+    });
+    
+    // Remove user notifications
+    delete notifications[userId];
+    
+    // Notify WebSocket listeners
+    notifyWebSocketListeners('users', { 
+      type: 'USERS_UPDATED', 
+      users,
+      deletedUserId: userId 
+    });
+    
+    console.log(`User ${deletedUser.name} (${userId}) deleted successfully`);
+    
+    return true;
+  },
+  
+  createUser: async (userData: { name: string; email: string; password: string; role: 'admin' | 'tenant' }): Promise<User> => {
+    // Simulate API delay
+    await new Promise(r => setTimeout(r, 1000));
+    
+    // Validate email is unique
+    const existingUser = users.find(u => u.email === userData.email);
+    if (existingUser) {
+      throw new Error('Email already in use');
+    }
+    
+    // Create new user
+    const newUser: User = {
+      id: crypto.randomUUID(),
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Add to users array
+    users = [...users, newUser];
+    
+    // Notify WebSocket listeners
+    notifyWebSocketListeners('users', { 
+      type: 'USERS_UPDATED', 
+      users,
+      newUser
+    });
+    
+    console.log(`New user created: ${newUser.name} (${newUser.role})`);
+    
+    return newUser;
   },
   
   // New subscription methods
