@@ -122,7 +122,7 @@ const NotificationBell: React.FC = () => {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      onClick={() => notifications.clearNotification(notification.id)}
+                      onClick={() => notifications.deleteNotification(notification.id)}
                     >
                       <X className="h-4 w-4" />
                     </Button>

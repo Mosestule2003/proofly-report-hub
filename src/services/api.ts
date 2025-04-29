@@ -101,7 +101,8 @@ const addNotification = (userId: string, title: string, message: string) => {
     title,
     message,
     date: new Date(),
-    read: false
+    read: false,
+    type: 'info' // Default type
   };
   
   notifications[userId] = [newNotification, ...notifications[userId]];
@@ -616,28 +617,32 @@ export const api = {
           title: 'Welcome to Proofly',
           message: 'Thank you for joining our property evaluation platform.',
           date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
-          read: true
+          read: true,
+          type: 'info'
         },
         {
           id: '302',
           title: 'Order Received',
           message: 'Your evaluation request for 2 properties has been received.',
           date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-          read: true
+          read: true,
+          type: 'info'
         },
         {
           id: '303',
           title: 'Report Ready',
           message: 'Your property evaluation report is now available to view.',
           date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-          read: false
+          read: false,
+          type: 'success'
         },
         {
           id: '304',
           title: 'New Feature Available',
           message: 'We have added multi-property evaluation support to our platform.',
           date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-          read: false
+          read: false,
+          type: 'info'
         }
       ];
     }
