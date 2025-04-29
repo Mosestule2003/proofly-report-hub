@@ -1,70 +1,95 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ArrowRight, Calendar, CircleDollarSign, Tag } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ArrowRight } from 'lucide-react';
-import { Order } from '@/services/api';
+
+interface Transaction {
+  id: string;
+  date: string;
+  status: string;
+  totalPrice: number;
+  properties: Array<{ address: string }>;
+  // Additional properties as needed
+}
 
 interface LastTransactionsProps {
-  transactions: Order[];
-  onViewTransaction: (orderId: string) => void;
+  transactions: Transaction[];
+  onViewTransaction: (id: string) => void;
+  className?: string;
 }
 
 const LastTransactions: React.FC<LastTransactionsProps> = ({ 
-  transactions,
-  onViewTransaction 
+  transactions, 
+  onViewTransaction,
+  className 
 }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Evaluator Assigned': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'In Progress': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'Report Ready': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-  
+  // Get the 5 most recent transactions
+  const recentTransactions = [...transactions]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+    
   return (
-    <Card className="col-span-2">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Last Transactions</CardTitle>
-        <Button variant="outline" size="sm">View All</Button>
+    <Card className={cn('', className)}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <CircleDollarSign className="h-4 w-4" /> Recent Transactions
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {transactions.slice(0, 5).map((transaction) => (
-            <div key={transaction.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Order #{transaction.id.substring(0, 8)}</span>
-                  <Badge className={`${getStatusColor(transaction.status)}`}>
-                    {transaction.status}
-                  </Badge>
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  {format(new Date(transaction.createdAt), 'MMM dd, yyyy')} • {transaction.properties.length} properties
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold">${transaction.totalPrice}</span>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+          {recentTransactions.length === 0 ? (
+            <p className="text-center text-muted-foreground p-4">No transactions yet</p>
+          ) : (
+            <div className="space-y-4">
+              {recentTransactions.map((transaction) => (
+                <div 
+                  key={transaction.id}
+                  className="flex items-start justify-between space-x-4 p-3 rounded-lg border border-border hover:bg-muted/30 cursor-pointer transition-colors"
                   onClick={() => onViewTransaction(transaction.id)}
                 >
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-          
-          {transactions.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No transactions yet</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        ID: {transaction.id.substring(0, 8)}...
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium">
+                      {transaction.properties[0].address}
+                      {transaction.properties.length > 1 && 
+                        ` and ${transaction.properties.length - 1} more`
+                      }
+                    </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(transaction.date), 'MMM d, yyyy')}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium">${transaction.totalPrice}</div>
+                    <div className={cn(
+                      "text-xs mt-1 px-1.5 py-0.5 rounded",
+                      transaction.status === 'Report Ready' 
+                        ? "bg-green-100 text-green-700" 
+                        : transaction.status === 'In Progress'
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-amber-100 text-amber-700"
+                    )}>
+                      {transaction.status}
+                    </div>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground mt-2" />
+                </div>
+              ))}
             </div>
           )}
+          <div className="text-center">
+            <a href="#" className="text-xs text-primary hover:underline">View All Transactions</a>
+          </div>
         </div>
       </CardContent>
     </Card>

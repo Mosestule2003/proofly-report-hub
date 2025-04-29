@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -10,12 +9,15 @@ import { Evaluator } from '@/components/EvaluatorProfile';
 // Import our components
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminTopBar from '@/components/admin/AdminTopBar';
-import DashboardStats from '@/components/admin/DashboardStats';
+import EnhancedDashboardStats from '@/components/admin/EnhancedDashboardStats';
 import SalesChart from '@/components/admin/SalesChart';
 import CostBreakdown from '@/components/admin/CostBreakdown';
 import LastTransactions from '@/components/admin/LastTransactions';
 import PendingInquiries from '@/components/admin/PendingInquiries';
 import UsersList from '@/components/admin/UsersList';
+import AIOutreachStats from '@/components/admin/AIOutreachStats';
+import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
+import RecentActivityFeed from '@/components/admin/RecentActivityFeed';
 
 // Import existing order detail components
 import PendingOrders from '@/components/admin/PendingOrders';
@@ -24,6 +26,9 @@ import CompletedOrders from '@/components/admin/CompletedOrders';
 
 // Import tracker for current order view
 import PropertyEvaluationTracker from '@/components/PropertyEvaluationTracker';
+
+// Import demo data generator
+import { generateDemoActivities, generateRandomMetrics } from '@/utils/demoActivityData';
 
 // Tabs and dialog components
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,6 +46,8 @@ const Admin: React.FC = () => {
   const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [viewingOrderDetails, setViewingOrderDetails] = useState(false);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [dashboardMetrics, setDashboardMetrics] = useState<any>(null);
   
   // Calculate total earnings from completed orders
   const totalEarnings = orders
@@ -79,6 +86,10 @@ const Admin: React.FC = () => {
         setOrders(allOrders);
         setMetrics(adminMetrics);
         setEvaluators(allEvaluators);
+        
+        // Set demo activities data
+        setActivities(generateDemoActivities());
+        setDashboardMetrics(generateRandomMetrics());
         
       } catch (error) {
         console.error('Error loading admin data:', error);
@@ -235,17 +246,34 @@ const Admin: React.FC = () => {
           {/* Top bar */}
           <AdminTopBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
           
-          {/* Stats cards */}
-          <DashboardStats 
-            totalOrders={orders.length} 
-            completedEvaluations={completedOrders.length}
-            totalEarnings={totalEarnings}
-          />
+          {/* Enhanced Stats cards */}
+          {dashboardMetrics && (
+            <EnhancedDashboardStats 
+              className="mb-6"
+              totalOrders={dashboardMetrics.totalOrders} 
+              evaluationsInProgress={dashboardMetrics.evaluationsInProgress}
+              totalRevenue={dashboardMetrics.totalRevenue}
+              evaluationCompletionRate={dashboardMetrics.evaluationCompletionRate}
+            />
+          )}
           
-          {/* Charts and transactions section */}
+          {/* AI Outreach and Property Heatmap */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <SalesChart />
-            <CostBreakdown />
+            {dashboardMetrics && (
+              <AIOutreachStats
+                successRate={dashboardMetrics.successRate}
+                totalOutreaches={dashboardMetrics.totalOutreaches}
+                scheduledViewings={dashboardMetrics.scheduledViewings}
+                avgResponseTime={dashboardMetrics.avgResponseTime}
+              />
+            )}
+            <PropertyHeatmap className="md:col-span-2" />
+          </div>
+          
+          {/* Charts and Activity section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <SalesChart className="md:col-span-2" />
+            <RecentActivityFeed activities={activities} />
           </div>
           
           {/* Users section */}
@@ -257,7 +285,14 @@ const Admin: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <LastTransactions 
               transactions={orders} 
-              onViewTransaction={handleViewTransaction}
+              onViewTransaction={(orderId) => {
+                const order = orders.find(order => order.id === orderId);
+                if (order) {
+                  setSelectedOrder(order);
+                  setViewingOrderDetails(true);
+                }
+              }}
+              className="md:col-span-2"
             />
             <PendingInquiries />
           </div>
