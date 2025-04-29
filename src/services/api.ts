@@ -1,5 +1,6 @@
+
 import { toast } from 'sonner';
-import { Property } from '@/context/CartContext';
+import { Property, LandlordInfo } from '@/context/CartContext';
 import { User, mockUsers } from '@/context/AuthContext';
 import { AppNotification } from '@/components/NotificationBell';
 import { Evaluator } from '@/components/EvaluatorProfile';
@@ -129,6 +130,15 @@ export const api = {
   ): Promise<Order> => {
     // Simulate API delay
     await new Promise(r => setTimeout(r, 1000));
+    
+    // Verify all properties have landlord information
+    const allPropertiesHaveLandlord = properties.every(prop => 
+      prop.landlordInfo?.name && prop.landlordInfo?.email && prop.landlordInfo?.phone
+    );
+    
+    if (!allPropertiesHaveLandlord) {
+      throw new Error("All properties must have landlord information");
+    }
     
     const newOrder: Order = {
       id: crypto.randomUUID(),
@@ -536,13 +546,25 @@ export const api = {
         id: '1',
         address: '123 Main St, Anytown, USA',
         description: 'Single family home with backyard',
-        price: 30
+        price: 30,
+        landlordInfo: {
+          name: 'John Smith',
+          email: 'john@example.com',
+          phone: '555-123-4567',
+          company: 'Smith Properties'
+        }
       },
       {
         id: '2',
         address: '456 Oak Ave, Anytown, USA',
         description: 'Apartment in downtown area',
-        price: 30
+        price: 30,
+        landlordInfo: {
+          name: 'Emma Johnson',
+          email: 'emma@example.com',
+          phone: '555-987-6543',
+          company: 'City Apartments'
+        }
       }
     ];
     
@@ -551,7 +573,12 @@ export const api = {
         id: '3',
         address: '789 Pine Rd, Anytown, USA',
         description: 'Townhouse with garage',
-        price: 45
+        price: 45,
+        landlordInfo: {
+          name: 'Robert Williams',
+          email: 'robert@example.com',
+          phone: '555-567-8901'
+        }
       },
     ];
     

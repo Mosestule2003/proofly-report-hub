@@ -3,17 +3,26 @@ import React, { createContext, useContext, useState } from 'react';
 import { AgentContact } from '@/services/api';
 
 export interface Property {
-  id: string; // Changed from optional to required
+  id: string;
   address: string;
   description: string;
-  price: number; // Changed from optional to required
+  price: number;
   agentContact?: AgentContact;
+  landlordInfo?: LandlordInfo;
+}
+
+export interface LandlordInfo {
+  name: string;
+  email: string;
+  phone: string;
+  company?: string;
 }
 
 interface CartContextType {
   properties: Property[];
   addProperty: (property: Property) => void;
-  removeProperty: (propertyId: string) => void; // Changed from index to propertyId
+  removeProperty: (propertyId: string) => void;
+  updatePropertyLandlord: (propertyId: string, landlordInfo: LandlordInfo) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
   getDiscount: () => number;
@@ -43,6 +52,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setProperties(updatedProperties);
   };
   
+  const updatePropertyLandlord = (propertyId: string, landlordInfo: LandlordInfo) => {
+    const updatedProperties = properties.map(prop => 
+      prop.id === propertyId ? { ...prop, landlordInfo } : prop
+    );
+    setProperties(updatedProperties);
+  };
+  
   const clearCart = () => {
     setProperties([]);
   };
@@ -61,6 +77,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     properties,
     addProperty,
     removeProperty,
+    updatePropertyLandlord,
     clearCart,
     getTotalPrice,
     getDiscount
