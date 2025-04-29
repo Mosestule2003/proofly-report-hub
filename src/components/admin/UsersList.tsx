@@ -1,10 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/services/api';
-import { Users } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Users, User as UserIcon, Shield, Mail, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface UsersListProps {
   className?: string;
@@ -97,31 +100,47 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>User</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Registered</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     No users found
                   </TableCell>
                 </TableRow>
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                    <TableCell className="font-medium flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                        <UserIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <span>{user.name}</span>
+                    </TableCell>
+                    <TableCell className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      {user.email}
+                    </TableCell>
+                    <TableCell className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      {user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : 'N/A'}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={user.role === 'admin' ? "default" : "outline"}>
-                        {user.role}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        <Badge variant={user.role === 'admin' ? "default" : "outline"}>
+                          {user.role}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline">View Details</Button>
                     </TableCell>
                   </TableRow>
                 ))

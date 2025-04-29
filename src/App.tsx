@@ -17,6 +17,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
+import AdminUsers from "./pages/AdminUsers";
 import AdminOrders from "./pages/AdminOrders";
 import AdminLogin from "./pages/AdminLogin";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -53,6 +54,7 @@ const App = () => (
                     {/* Admin-only routes */}
                     <Route element={<ProtectedRoute allowedRoles={['admin']} redirectPath="/admin/login" />}>
                       <Route path="/admin" element={<Admin />} />
+                      <Route path="/admin/users" element={<AdminUsers />} />
                       <Route path="/admin/orders" element={<AdminOrders />} />
                     </Route>
                     
