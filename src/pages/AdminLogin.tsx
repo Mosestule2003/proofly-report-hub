@@ -1,43 +1,60 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Info } from 'lucide-react';
+import { Loader2, Info, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { api } from '@/services/api';
 
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
-  const { loginAdmin } = useAuth();
+  const { loginAdmin, user, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  
+  // If already authenticated as admin, redirect to admin dashboard
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') {
+      navigate('/admin');
+    }
+  }, [isAuthenticated, user, navigate]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
     
     if (!email || !password) {
       toast.error('Please enter both email and password');
+      setLoginError('Please enter both email and password');
       return;
     }
     
     setIsLoading(true);
     
     try {
+      // Initialize mock data first to ensure we have test accounts
+      await api.initMockData();
+      
+      // Attempt login
       const success = await loginAdmin(email, password);
       
       if (success) {
         toast.success('Welcome back, admin!');
         navigate('/admin');
       } else {
+        setLoginError('Invalid admin credentials');
         toast.error('Invalid admin credentials');
       }
     } catch (error) {
-      toast.error('Login failed');
       console.error('Login error:', error);
+      setLoginError('Login failed. Please try again.');
+      toast.error('Login failed');
     } finally {
       setIsLoading(false);
     }
@@ -54,6 +71,13 @@ const AdminLogin: React.FC = () => {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {loginError && (
+              <div className="p-3 bg-destructive/20 rounded-md flex items-start">
+                <AlertCircle className="h-5 w-5 mr-2 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="text-sm">{loginError}</div>
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

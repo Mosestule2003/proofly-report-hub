@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/services/api';
+import { Input } from '@/components/ui/input'; 
 
 // Import components
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -30,13 +31,26 @@ const AdminUsers: React.FC = () => {
   // Load users data
   useEffect(() => {
     const loadData = async () => {
-      if (!user || user.role !== 'admin') return;
+      if (!user) {
+        // Wait for auth check
+        setTimeout(() => {
+          if (!isAuthenticated) {
+            setIsLoading(false);
+          }
+        }, 1000);
+        return;
+      }
+      
+      if (user.role !== 'admin') {
+        setIsLoading(false);
+        return;
+      }
       
       setIsLoading(true);
       
       try {
         // Initialize mock data
-        api.initMockData(user);
+        await api.initMockData(user);
         
         console.log("Admin Users page: Initialized mock data");
         
@@ -46,6 +60,9 @@ const AdminUsers: React.FC = () => {
         // Make sure we trigger an update for all users
         const allUsers = await api.getAllUsers();
         console.log("Admin Users page: Retrieved users:", allUsers);
+        
+        // Ensure users data is visible for our admins
+        api.ensureOrdersVisibleToAdmin();
       } catch (error) {
         console.error('Error loading admin data:', error);
         toast.error("Failed to load admin data");
@@ -55,7 +72,7 @@ const AdminUsers: React.FC = () => {
     };
     
     loadData();
-  }, [user]);
+  }, [user, isAuthenticated]);
   
   // Loading state
   if (isLoading) {

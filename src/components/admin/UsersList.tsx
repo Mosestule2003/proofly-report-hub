@@ -40,7 +40,15 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [showAddUserDialog, setShowAddUserDialog] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const { user } = useAuth();
+  
+  // Filter users based on search term
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   
   useEffect(() => {
     const loadUsers = async () => {
@@ -48,7 +56,13 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
       
       try {
         if (user?.role === 'admin') {
+          // Ensure the mock data is initialized with test accounts
+          await api.initMockData(user);
+          console.log("UsersList: Mock data initialized");
+          
+          // Get all users from the API
           const allUsers = await api.getAllUsers();
+          console.log("UsersList: Raw users data:", allUsers);
           
           // Make sure we cast the API response to our local User interface
           const typedUsers = allUsers as User[];
@@ -119,15 +133,27 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
     setUserToDelete(user);
     setShowDeleteDialog(true);
   };
+  
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
 
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <CardTitle className="text-base flex items-center gap-2">
-            <Users className="h-4 w-4" /> Users
+            <Users className="h-4 w-4" /> Users Management
           </CardTitle>
           <div className="flex items-center gap-2">
+            <div className="relative">
+              <Input 
+                placeholder="Search users..."
+                className="w-[200px]"
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+            </div>
             <Badge variant="outline">{users.length} users</Badge>
             <Button 
               variant="outline" 
@@ -143,6 +169,7 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
       <CardContent>
         {isLoading ? (
           <div className="flex justify-center items-center h-32 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin mr-2" />
             Loading users...
           </div>
         ) : (
@@ -157,14 +184,14 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No users found
+                    {searchTerm ? 'No users found matching your search' : 'No users found'}
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((user) => (
+                filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
