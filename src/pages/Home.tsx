@@ -1,4 +1,3 @@
-
 import React, { useState, FormEvent, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -8,10 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { AgentContact } from '@/services/api';
-import { useLoadScript } from '@react-google-maps/api';
+import { useLoadScript, Libraries } from '@react-google-maps/api';
 import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
 
-const libraries = ['places'] as const;
+// Define libraries correctly for TypeScript
+const libraries: Libraries = ['places'];
 
 const Home: React.FC = () => {
   const { addProperty } = useCart();
@@ -25,7 +26,7 @@ const Home: React.FC = () => {
   const [showAgentFields, setShowAgentFields] = useState(true); // Always shown by default
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const autoCompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null); // Changed to HTMLInputElement
   
   // Load Google Maps API
   const { isLoaded, loadError } = useLoadScript({
@@ -58,7 +59,9 @@ const Home: React.FC = () => {
     
     return () => {
       // Clean up listener when component unmounts
-      google.maps.event.clearInstanceListeners(autoCompleteRef.current!);
+      if (autoCompleteRef.current) {
+        google.maps.event.clearInstanceListeners(autoCompleteRef.current);
+      }
     };
   }, [isLoaded]);
 
@@ -225,10 +228,10 @@ const Home: React.FC = () => {
                         <span className="ml-2">Loading address search...</span>
                       </div>
                     ) : (
-                      <textarea
+                      <Input
                         id="property"
                         ref={inputRef}
-                        className={`w-full p-3 pl-10 border rounded-lg h-24 focus:ring-2 focus:outline-none ${
+                        className={`w-full p-3 pl-10 ${
                           errors.property ? 'border-red-500 focus:ring-red-200' : 'focus:ring-primary focus:border-primary'
                         }`}
                         placeholder="Start typing an address..."
