@@ -90,6 +90,10 @@
     @apply border-border;
   }
 
+  html, body {
+    font-family: sans-serif;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
