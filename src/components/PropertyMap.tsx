@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, User, MapPin, Route, Navigation, MapPinCheck } from 'lucide-react';
 import { Property } from '@/context/CartContext';
@@ -25,6 +26,38 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [animationFrame, setAnimationFrame] = useState(0);
+  
+  // Calculate positions for all properties in a grid-like layout
+  const getPropertyPosition = (index: number) => {
+    // Create a more natural distribution of property positions
+    // For a more realistic map appearance
+    const positions = [
+      { left: '30', top: '40' }, // Property 1
+      { left: '60', top: '30' }, // Property 2
+      { left: '70', top: '60' }, // Property 3
+      { left: '40', top: '70' }, // Property 4
+      { left: '20', top: '50' }, // Property 5
+      { left: '50', top: '20' }, // Property 6
+      { left: '80', top: '40' }, // Property 7
+      { left: '35', top: '30' }, // Property 8
+    ];
+    
+    // If we have predefined positions for this index, use it
+    if (index < positions.length) {
+      return positions[index];
+    }
+    
+    // Otherwise fall back to grid calculation
+    const cols = Math.min(3, properties.length);
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    
+    // Distribute properties across the map
+    const left = 30 + (col * 20); // 30%, 50%, 70%
+    const top = 30 + (row * 20);  // 30%, 50%, 70% etc.
+    
+    return { left: `${left}`, top: `${top}` };
+  };
   
   // In a real implementation, we would use actual Google Maps API
   // For this simulation, we'll show a placeholder map with evaluator position
@@ -114,38 +147,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({
   };
   
   const evaluatorPosition = getEvaluatorPosition();
-  
-  // Calculate positions for all properties in a grid-like layout
-  const getPropertyPosition = (index: number) => {
-    // Create a more natural distribution of property positions
-    // For a more realistic map appearance
-    const positions = [
-      { left: '30', top: '40' }, // Property 1
-      { left: '60', top: '30' }, // Property 2
-      { left: '70', top: '60' }, // Property 3
-      { left: '40', top: '70' }, // Property 4
-      { left: '20', top: '50' }, // Property 5
-      { left: '50', top: '20' }, // Property 6
-      { left: '80', top: '40' }, // Property 7
-      { left: '35', top: '30' }, // Property 8
-    ];
-    
-    // If we have predefined positions for this index, use it
-    if (index < positions.length) {
-      return positions[index];
-    }
-    
-    // Otherwise fall back to grid calculation
-    const cols = Math.min(3, properties.length);
-    const col = index % cols;
-    const row = Math.floor(index / cols);
-    
-    // Distribute properties across the map
-    const left = 30 + (col * 20); // 30%, 50%, 70%
-    const top = 30 + (row * 20);  // 30%, 50%, 70% etc.
-    
-    return { left: `${left}`, top: `${top}` };
-  };
   
   // Get appropriate icon for property based on status
   const getPropertyIcon = (index: number) => {

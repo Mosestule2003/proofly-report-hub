@@ -36,8 +36,8 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
           // Sort in LIFO order (newest first)
           const sortedUsers = [...allUsers].sort((a, b) => {
             // Use optional chaining and nullish coalescing to handle possible undefined createdAt
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : Date.now();
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : Date.now();
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
             return dateB - dateA;
           });
           
@@ -58,8 +58,8 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
         // Sort in LIFO order (newest first)
         const sortedUsers = [...data.users].sort((a, b) => {
           // Use optional chaining and nullish coalescing to handle possible undefined createdAt
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : Date.now();
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : Date.now();
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return dateB - dateA;
         });
         
