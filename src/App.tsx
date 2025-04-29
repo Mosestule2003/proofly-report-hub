@@ -3,11 +3,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { NotificationsProvider } from "@/context/NotificationsContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Pages
 import Home from "./pages/Home";
@@ -36,15 +37,30 @@ const App = () => (
                 <Header />
                 <main className="flex-grow">
                   <Routes>
+                    {/* Public routes */}
                     <Route path="/" element={<Home />} />
-                    <Route path="/cart" element={<Cart />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/admin/orders" element={<AdminOrders />} />
                     <Route path="/admin/login" element={<AdminLogin />} />
                     <Route path="/checkout/success/:orderId" element={<CheckoutSuccess />} />
+                    
+                    {/* Tenant-only routes */}
+                    <Route element={<ProtectedRoute allowedRoles={['tenant']} redirectPath="/login" />}>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/cart" element={<Cart />} />
+                    </Route>
+                    
+                    {/* Admin-only routes */}
+                    <Route element={<ProtectedRoute allowedRoles={['admin']} redirectPath="/admin/login" />}>
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="/admin/orders" element={<AdminOrders />} />
+                    </Route>
+                    
+                    {/* Redirect admin users trying to access tenant routes */}
+                    <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
+                    <Route path="/cart" element={<Navigate to="/admin" replace />} />
+                    
+                    {/* 404 Route */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
