@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import {
   Card,
   CardContent,
@@ -34,8 +35,16 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // If already authenticated, redirect to dashboard
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
   
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -47,16 +56,27 @@ const Login: React.FC = () => {
   
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
+    setError(null);
     
     try {
       const success = await login(data.email, data.password);
       
       if (success) {
         navigate('/dashboard');
+      } else {
+        setError('Invalid email or password');
       }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const fillDemoCredentials = () => {
+    form.setValue('email', 'tenant@example.com');
+    form.setValue('password', '123456');
   };
   
   return (
@@ -108,6 +128,12 @@ const Login: React.FC = () => {
                 )}
               />
               
+              {error && (
+                <div className="text-sm font-medium text-destructive">
+                  {error}
+                </div>
+              )}
+              
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
@@ -119,12 +145,21 @@ const Login: React.FC = () => {
                 )}
               </Button>
               
-              {/* For demo purposes only */}
+              {/* Demo account helper */}
               <div className="text-sm text-muted-foreground pt-2">
                 <p className="mb-2">For demo, use:</p>
                 <p>Admin: admin@example.com</p>
                 <p>Tenant: tenant@example.com</p>
                 <p>Password: any 6+ characters</p>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 w-full"
+                  onClick={fillDemoCredentials}
+                >
+                  Fill with Demo Tenant
+                </Button>
               </div>
             </form>
           </Form>

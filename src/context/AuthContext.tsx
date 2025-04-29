@@ -1,11 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 export interface User {
   id: string;
   email: string;
   name: string;
   role: 'tenant' | 'admin';
+  createdAt?: string; // Add createdAt property to fix the TypeScript error
 }
 
 interface AuthContextType {
@@ -58,9 +60,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // In a real app, we would verify the password
       setUser(foundUser);
       localStorage.setItem('proofly_user', JSON.stringify(foundUser));
+      toast.success(`Welcome back, ${foundUser.name}!`);
       return true;
     }
     
+    toast.error("Invalid email or password");
     return false;
   };
   
@@ -75,9 +79,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // In a real app, we would verify the password
       setUser(foundUser);
       localStorage.setItem('proofly_user', JSON.stringify(foundUser));
+      toast.success(`Welcome back, ${foundUser.name}!`);
       return true;
     }
     
+    toast.error("Invalid admin credentials");
     return false;
   };
   
@@ -87,6 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     // Check if email already exists
     if (mockUsers.some(u => u.email === email)) {
+      toast.error("Email already in use");
       return false;
     }
     
@@ -95,7 +102,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       id: crypto.randomUUID(),
       email,
       name,
-      role: 'tenant'
+      role: 'tenant',
+      createdAt: new Date().toISOString() // Include createdAt for new users
     };
     
     // Add to mock users (in a real app, this would be stored in a database)
@@ -104,6 +112,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Log in the user
     setUser(newUser);
     localStorage.setItem('proofly_user', JSON.stringify(newUser));
+    toast.success("Account created successfully!");
     
     return true;
   };
@@ -111,6 +120,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('proofly_user');
+    toast.info("Logged out successfully");
   };
   
   const value = {
