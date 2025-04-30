@@ -1,24 +1,94 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { AdminTopBar } from '@/components/admin/AdminTopBar';
-import { AdminHeader } from '@/components/admin/AdminHeader';
-import { AdminMetrics } from '@/components/AdminMetrics';
-import { EnhancedDashboardStats } from '@/components/admin/EnhancedDashboardStats';
-import { SalesChart } from '@/components/admin/SalesChart';
-import { PendingInquiries } from '@/components/admin/PendingInquiries';
-import { PendingOrders } from '@/components/admin/PendingOrders';
-import { RecentActivityFeed } from '@/components/admin/RecentActivityFeed';
-import { ActivityCards } from '@/components/admin/ActivityCards';
-import { KeyMetricsCards } from '@/components/admin/KeyMetricsCards';
-import { AIOutreachStats } from '@/components/admin/AIOutreachStats';
-import { PropertyHeatmap } from '@/components/admin/PropertyHeatmap';
-import { LastTransactions } from '@/components/admin/LastTransactions';
-import { api, Evaluator, Order, AdminMetrics as AdminMetricsType, Transaction } from '@/services/api';
+import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdminTopBar from '@/components/admin/AdminTopBar';
+import AdminHeader from '@/components/admin/AdminHeader';
+import AdminMetrics from '@/components/AdminMetrics';
+import EnhancedDashboardStats from '@/components/admin/EnhancedDashboardStats';
+import SalesChart from '@/components/admin/SalesChart';
+import PendingInquiries from '@/components/admin/PendingInquiries';
+import PendingOrders from '@/components/admin/PendingOrders';
+import RecentActivityFeed from '@/components/admin/RecentActivityFeed';
+import ActivityCards from '@/components/admin/ActivityCards';
+import KeyMetricsCards from '@/components/admin/KeyMetricsCards';
+import AIOutreachStats from '@/components/admin/AIOutreachStats';
+import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
+import LastTransactions from '@/components/admin/LastTransactions';
+import { api } from '@/services/api';
+
+// Define the types we need since they're not exported from the API
+interface Evaluator {
+  id: string;
+  name: string;
+  rating: number;
+  completedEvaluations: number;
+  availability: 'Available' | 'Busy';
+  specialization: string;
+}
+
+interface Order {
+  id: string;
+  tenantName: string;
+  propertyAddress: string;
+  date: string;
+  status: string;
+  amount: number;
+  rating?: number;
+}
+
+interface AdminMetricsType {
+  tenantCount: number;
+  orderCount: number;
+  pendingOrderCount: number;
+  completedOrderCount: number;
+}
+
+interface Transaction {
+  id: string;
+  amount: number;
+  status: 'completed' | 'pending' | 'failed';
+  description: string;
+  date: string;
+}
 
 // Sample activity data
-import { activityData } from '@/utils/demoActivityData';
+const activityData = [
+  {
+    id: '1',
+    user: 'John Smith',
+    action: 'created an evaluation order',
+    target: '123 Main St. Apartment',
+    time: '2 hours ago'
+  },
+  {
+    id: '2',
+    user: 'Sarah Johnson',
+    action: 'scheduled a viewing',
+    target: '456 Park Ave Condo',
+    time: '4 hours ago'
+  },
+  {
+    id: '3',
+    user: 'Michael Brown',
+    action: 'completed a payment',
+    target: '$249.99',
+    time: '5 hours ago'
+  },
+  {
+    id: '4',
+    user: 'Emily Davis',
+    action: 'submitted feedback',
+    target: 'Evaluator Report #4592',
+    time: '1 day ago'
+  },
+  {
+    id: '5',
+    user: 'Robert Wilson',
+    action: 'requested evaluation',
+    target: '789 Ocean Blvd House',
+    time: '1 day ago'
+  }
+];
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -138,12 +208,20 @@ const Admin: React.FC = () => {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminTopBar onOpenSidebar={() => setSidebarOpen(true)} />
+        <AdminTopBar 
+          searchTerm="" 
+          setSearchTerm={() => {}} 
+          onOpenSidebar={() => setSidebarOpen(true)} 
+        />
 
         {/* Scrollable main content */}
         <div className="flex-1 overflow-auto pb-8">
           <div className="container max-w-7xl mx-auto px-4 py-6">
-            <AdminHeader />
+            <AdminHeader 
+              userName="Admin" 
+              searchTerm=""
+              setSearchTerm={() => {}}
+            />
 
             {/* Main dashboard grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
