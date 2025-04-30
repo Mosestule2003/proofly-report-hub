@@ -1,66 +1,65 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CircleCheck, Phone, Clock, CalendarCheck } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { MessageCircle, Users, CheckCircle } from 'lucide-react';
 
 interface AIOutreachStatsProps {
-  totalOutreach?: number;
   successRate?: number;
-  responsesReceived?: number;
-  className?: string;
+  totalOutreaches?: number;
+  scheduledViewings?: number;
+  avgResponseTime?: string;
 }
 
-export const AIOutreachStats: React.FC<AIOutreachStatsProps> = ({
-  totalOutreach = 68,
-  successRate = 87,
-  responsesReceived = 59,
-  className = ''
+const AIOutreachStats: React.FC<AIOutreachStatsProps> = ({
+  successRate = 78,
+  totalOutreaches = 124,
+  scheduledViewings = 42,
+  avgResponseTime = "2.4h"
 }) => {
   return (
-    <Card className={`shadow-sm ${className}`}>
+    <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
-          <MessageCircle className="h-4 w-4" /> AI Outreach Statistics
+          AI Outreach Performance
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-medium">Outreach Success Rate</p>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Success Rate</span>
               <span className="text-sm font-medium">{successRate}%</span>
             </div>
-            <Progress value={successRate} className="h-2" />
+            <Progress value={successRate} className="h-2 mt-1" />
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-muted/30 p-3 rounded-md flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <MessageCircle className="h-4 w-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Outreach</p>
-                <p className="text-lg font-medium">{totalOutreach}</p>
-              </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+              <Phone className="h-5 w-5 text-primary mb-1" />
+              <span className="text-xl font-semibold">{totalOutreaches}</span>
+              <span className="text-xs text-muted-foreground">Total Calls</span>
             </div>
             
-            <div className="bg-muted/30 p-3 rounded-md flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Responses Received</p>
-                <p className="text-lg font-medium">{responsesReceived}</p>
-              </div>
+            <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+              <CalendarCheck className="h-5 w-5 text-green-500 mb-1" />
+              <span className="text-xl font-semibold">{scheduledViewings}</span>
+              <span className="text-xs text-muted-foreground">Scheduled</span>
+            </div>
+            
+            <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+              <Clock className="h-5 w-5 text-amber-500 mb-1" />
+              <span className="text-xl font-semibold">{avgResponseTime}</span>
+              <span className="text-xs text-muted-foreground">Avg. Response</span>
             </div>
           </div>
           
-          <div className="pt-2">
-            <p className="text-xs text-muted-foreground">
-              AI-powered outreach has connected tenants with {successRate}% of landlords, 
-              significantly reducing scheduling time.
-            </p>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center">
+              <CircleCheck className="h-4 w-4 text-green-500 mr-1" />
+              <span>Last outreach: 12 minutes ago</span>
+            </div>
+            <a href="#" className="text-primary hover:underline">View Details</a>
           </div>
         </div>
       </CardContent>

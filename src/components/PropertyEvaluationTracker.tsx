@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building, CheckCircle, MapPin, Clock, Loader2 } from 'lucide-react';
+import { Building, CheckCircle, MapPin, Clock, Loader2, Calendar, CalendarCheck, MessageSquare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,17 +13,60 @@ interface PropertyEvaluationTrackerProps {
   order: Order;
 }
 
+// New improved order step statuses that include outreach
+export type EnhancedOrderStepStatus = 
+  'PENDING_MATCH' | 
+  'OUTREACH_INITIATED' | 
+  'OUTREACH_SCHEDULING' | 
+  'OUTREACH_SCHEDULED' |
+  'EN_ROUTE' | 
+  'ARRIVED' | 
+  'EVALUATING' | 
+  'COMPLETED' | 
+  'REPORT_READY';
+
 const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ order }) => {
   const [progressValue, setProgressValue] = useState(0);
-  const [hoveredStep, setHoveredStep] = useState<string | null>(null);
+  const [enhancedStep, setEnhancedStep] = useState<EnhancedOrderStepStatus>('PENDING_MATCH');
+
+  // Map the original step to our enhanced step that includes outreach
+  useEffect(() => {
+    if (!order || !order.currentStep) {
+      setEnhancedStep('PENDING_MATCH');
+      return;
+    }
+    
+    // If the step is already one of our enhanced steps, use it directly
+    if (
+      order.currentStep === 'OUTREACH_INITIATED' || 
+      order.currentStep === 'OUTREACH_SCHEDULING' || 
+      order.currentStep === 'OUTREACH_SCHEDULED'
+    ) {
+      setEnhancedStep(order.currentStep as EnhancedOrderStepStatus);
+    } else {
+      // Otherwise map from original step
+      setEnhancedStep(order.currentStep as EnhancedOrderStepStatus);
+    }
+  }, [order]);
 
   // Calculate which step of the process we're on (as a percentage)
   useEffect(() => {
     const calculateProgress = () => {
-      if (!order || !order.currentStep) return 0;
+      if (!order || !enhancedStep) return 0;
       
-      const steps: OrderStepStatus[] = ['PENDING_MATCH', 'EN_ROUTE', 'ARRIVED', 'EVALUATING', 'COMPLETED', 'REPORT_READY'];
-      const currentStepIndex = steps.indexOf(order.currentStep);
+      const steps: EnhancedOrderStepStatus[] = [
+        'PENDING_MATCH', 
+        'OUTREACH_INITIATED', 
+        'OUTREACH_SCHEDULING', 
+        'OUTREACH_SCHEDULED',
+        'EN_ROUTE', 
+        'ARRIVED', 
+        'EVALUATING', 
+        'COMPLETED', 
+        'REPORT_READY'
+      ];
+      
+      const currentStepIndex = steps.indexOf(enhancedStep);
       const totalSteps = steps.length - 1; // -1 because we don't count PENDING_MATCH in the progress
       
       let propertyProgress = 0;
@@ -34,10 +77,10 @@ const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ o
         const basePropertyProgress = completedProperties * propertyFraction;
         
         // If we're in the middle of evaluating a property, add partial property progress
-        if (currentStepIndex > 1 && currentStepIndex < 5) { // Between EN_ROUTE and COMPLETED
-          const propertySteps = 4; // EN_ROUTE, ARRIVED, EVALUATING, COMPLETED
-          const propertyStepIndex = currentStepIndex - 1; // -1 because EN_ROUTE is the first property step
-          const propertyStepProgress = (propertyStepIndex / propertySteps) * propertyFraction;
+        if (currentStepIndex > 1 && currentStepIndex < 8) { // Between OUTREACH_INITIATED and COMPLETED
+          const propertyStepCount = 7; // OUTREACH_INITIATED through COMPLETED
+          const propertyStepIndex = currentStepIndex - 1; // -1 because PENDING_MATCH is the first step
+          const propertyStepProgress = (propertyStepIndex / propertyStepCount) * propertyFraction;
           propertyProgress = basePropertyProgress + propertyStepProgress;
         } else {
           propertyProgress = basePropertyProgress;
@@ -45,9 +88,9 @@ const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ o
       }
       
       let progress = 0;
-      if (order.currentStep === 'PENDING_MATCH') {
+      if (enhancedStep === 'PENDING_MATCH') {
         progress = 5; // Starting progress
-      } else if (order.currentStep === 'REPORT_READY') {
+      } else if (enhancedStep === 'REPORT_READY') {
         progress = 100; // Done
       } else {
         progress = 10 + (propertyProgress * 85); // Scale to 10-95% range
@@ -69,7 +112,7 @@ const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ o
     }, 50);
     
     return () => clearInterval(timer);
-  }, [order]);
+  }, [order, enhancedStep]);
 
   // Get the map step number (0: en route, 1: arrived, 2: evaluating, 3: completed)
   const getMapStepNumber = (orderStep: OrderStepStatus | undefined): number => {
@@ -88,15 +131,21 @@ const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ o
   
   // Get message based on current step
   const getStepMessage = (): string => {
-    if (!order.currentStep) return 'Processing...';
+    if (!enhancedStep) return 'Processing...';
     
     const currentPropertyIndex = order.currentPropertyIndex || 0;
     const property = order.properties[currentPropertyIndex];
     const address = property ? property.address.split(',')[0] : '';
     
-    switch (order.currentStep) {
+    switch (enhancedStep) {
       case 'PENDING_MATCH':
         return 'Finding an evaluator near you...';
+      case 'OUTREACH_INITIATED':
+        return `Contacting landlord for ${address}...`;
+      case 'OUTREACH_SCHEDULING':
+        return `Coordinating viewing times for ${address}...`;
+      case 'OUTREACH_SCHEDULED':
+        return `Viewing scheduled for ${address}.`;
       case 'EN_ROUTE':
         return `Evaluator en route to ${address}...`;
       case 'ARRIVED':
@@ -111,103 +160,62 @@ const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ o
         return 'Processing...';
     }
   };
+
+  // Determine if we're in the outreach phase
+  const isInOutreachPhase = () => {
+    return enhancedStep === 'OUTREACH_INITIATED' || 
+           enhancedStep === 'OUTREACH_SCHEDULING' || 
+           enhancedStep === 'OUTREACH_SCHEDULED';
+  };
   
-  // Get estimated time for each step
-  const getStepTime = (step: string): string => {
-    if (!order || !order.currentStep) return '';
-    
-    // Use the order's createdAt as a base timestamp
-    const baseTime = new Date(order.createdAt);
-    let minutesToAdd = 0;
-    
-    switch(step) {
-      case 'PENDING_MATCH': 
-        return 'Typically 1-3 minutes';
-      case 'EN_ROUTE':
-        minutesToAdd = 10;
-        break;
-      case 'ARRIVED':
-        minutesToAdd = 25;
-        break;
-      case 'EVALUATING':
-        minutesToAdd = 35;
-        break;
-      case 'COMPLETED':
-        minutesToAdd = 50;
-        break;
-      case 'REPORT_READY':
-        minutesToAdd = 60;
-        break;
-      default:
-        return '';
-    }
-    
-    // Add minutes to base time
-    const stepTime = new Date(baseTime.getTime() + minutesToAdd * 60000);
-    return stepTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // Determine if we're in the evaluation phase
+  const isInEvaluationPhase = () => {
+    return enhancedStep === 'EN_ROUTE' || 
+           enhancedStep === 'ARRIVED' || 
+           enhancedStep === 'EVALUATING' || 
+           enhancedStep === 'COMPLETED';
   };
   
   if (!order) return null;
   
-  // Define the evaluation steps for the progress bar
-  const evaluationSteps: OrderStepStatus[] = ['PENDING_MATCH', 'EN_ROUTE', 'ARRIVED', 'EVALUATING', 'COMPLETED', 'REPORT_READY'];
-  const currentStepIndex = order.currentStep ? evaluationSteps.indexOf(order.currentStep) : 0;
-  
   return (
     <div className="border border-dashed rounded-lg p-6 bg-muted/30">
       <div className="text-center mb-6">
-        <Clock className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-        <h3 className="text-lg font-medium mb-1">Evaluation in progress</h3>
+        {enhancedStep === 'PENDING_MATCH' ? (
+          <Clock className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+        ) : isInOutreachPhase() ? (
+          <MessageSquare className="h-10 w-10 mx-auto mb-3 text-primary" />
+        ) : isInEvaluationPhase() ? (
+          <Building className="h-10 w-10 mx-auto mb-3 text-primary" />
+        ) : (
+          <CheckCircle className="h-10 w-10 mx-auto mb-3 text-green-500" />
+        )}
+        
+        <h3 className="text-lg font-medium mb-1">
+          {isInOutreachPhase() ? 'Scheduling in progress' : 
+           isInEvaluationPhase() ? 'Evaluation in progress' : 
+           enhancedStep === 'REPORT_READY' ? 'Evaluation complete' : 
+           'Processing order'}
+        </h3>
         <p className="text-sm text-muted-foreground">
           {getStepMessage()}
         </p>
       </div>
       
-      {/* Enhanced progress indicator */}
+      {/* Progress indicator */}
       <div className="mb-6 relative">
-        <div className="h-1 bg-muted-foreground/20 rounded-full mb-4">
+        <div className="h-1 bg-muted-foreground/20 rounded-full mb-2">
           <div 
             className="h-1 bg-primary rounded-full transition-all duration-500"
             style={{ width: `${progressValue}%` }}
           ></div>
         </div>
         
-        <div className="flex justify-between relative">
-          {evaluationSteps.map((step, index) => {
-            const isActive = index <= currentStepIndex;
-            const isCurrentStep = index === currentStepIndex;
-            
-            return (
-              <div 
-                key={step} 
-                className="flex flex-col items-center relative"
-                style={{ width: `${100 / evaluationSteps.length}%` }}
-                onMouseEnter={() => setHoveredStep(step)}
-                onMouseLeave={() => setHoveredStep(null)}
-              >
-                <div 
-                  className={`w-4 h-4 rounded-full ${
-                    isActive 
-                      ? isCurrentStep 
-                        ? 'bg-primary animate-pulse' 
-                        : 'bg-primary' 
-                      : 'bg-muted-foreground/30'
-                  } mb-2`}
-                />
-                <span className="text-xs text-muted-foreground whitespace-nowrap absolute -left-1/2 right-1/2 text-center">
-                  {step.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ')}
-                </span>
-                
-                {/* Tooltip with time estimate */}
-                {hoveredStep === step && (
-                  <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-background border shadow-md rounded-md p-2 z-10 text-xs whitespace-nowrap">
-                    <span className="font-medium">{getStepTime(step)}</span>
-                    {isCurrentStep && <span className="text-primary"> (current)</span>}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Finding Evaluator</span>
+          <span>Scheduling</span>
+          <span>Evaluation</span>
+          <span>Report Ready</span>
         </div>
       </div>
       
@@ -219,11 +227,70 @@ const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ o
         </div>
       )}
       
+      {/* Show outreach progress for scheduling phase */}
+      {isInOutreachPhase() && order.currentPropertyIndex !== undefined && (
+        <div className="mb-6 border rounded-md p-4">
+          <h4 className="font-medium text-sm mb-3 flex items-center">
+            <Calendar className="h-4 w-4 mr-1 text-primary" />
+            Scheduling Progress
+          </h4>
+          
+          <div className="space-y-4">
+            <div className={`flex items-start gap-3 ${enhancedStep !== 'OUTREACH_INITIATED' ? 'opacity-70' : ''}`}>
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                enhancedStep === 'OUTREACH_INITIATED' ? 'bg-primary text-white' : 
+                (enhancedStep === 'OUTREACH_SCHEDULING' || enhancedStep === 'OUTREACH_SCHEDULED' || isInEvaluationPhase()) ? 'bg-green-500 text-white' : 
+                'bg-muted text-muted-foreground'
+              }`}>
+                <MessageSquare className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-medium">Contacting Landlord</p>
+                <p className="text-sm text-muted-foreground">
+                  {order.properties[order.currentPropertyIndex]?.landlordInfo?.name || "Landlord"} has been contacted about the property viewing request.
+                </p>
+              </div>
+            </div>
+            
+            <div className={`flex items-start gap-3 ${enhancedStep !== 'OUTREACH_SCHEDULING' ? 'opacity-70' : ''}`}>
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                enhancedStep === 'OUTREACH_SCHEDULING' ? 'bg-primary text-white' : 
+                (enhancedStep === 'OUTREACH_SCHEDULED' || isInEvaluationPhase()) ? 'bg-green-500 text-white' : 
+                'bg-muted text-muted-foreground'
+              }`}>
+                <Calendar className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-medium">Scheduling Viewing</p>
+                <p className="text-sm text-muted-foreground">
+                  Coordinating available times for property evaluation.
+                </p>
+              </div>
+            </div>
+            
+            <div className={`flex items-start gap-3 ${enhancedStep !== 'OUTREACH_SCHEDULED' && !isInEvaluationPhase() ? 'opacity-70' : ''}`}>
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                enhancedStep === 'OUTREACH_SCHEDULED' ? 'bg-primary text-white' : 
+                isInEvaluationPhase() ? 'bg-green-500 text-white' : 
+                'bg-muted text-muted-foreground'
+              }`}>
+                <CalendarCheck className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-medium">Viewing Confirmed</p>
+                <p className="text-sm text-muted-foreground">
+                  {enhancedStep === 'OUTREACH_SCHEDULED' || isInEvaluationPhase()
+                    ? `Scheduled for tomorrow at ${new Date().getHours()}:00`
+                    : "Waiting for confirmation..."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Enhanced map for in-progress evaluations */}
-      {order.currentStep && 
-       order.currentStep !== 'PENDING_MATCH' && 
-       order.currentStep !== 'REPORT_READY' && 
-       order.currentPropertyIndex !== undefined && (
+      {isInEvaluationPhase() && order.currentPropertyIndex !== undefined && (
         <div className="mb-6">
           <p className="font-medium text-sm mb-2 flex items-center">
             <MapPin className="h-4 w-4 mr-1 text-primary" />
@@ -270,10 +337,13 @@ const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ o
                           <Badge variant={index === order.currentPropertyIndex ? "default" : "outline"} className="mt-2">
                             {(order.currentPropertyIndex !== undefined && index < order.currentPropertyIndex) ? 'Completed' : 
                              index === order.currentPropertyIndex ? 
-                               order.currentStep === 'EN_ROUTE' ? 'En Route' :
-                               order.currentStep === 'ARRIVED' ? 'Arrived' :
-                               order.currentStep === 'EVALUATING' ? 'Evaluating' :
-                               order.currentStep === 'COMPLETED' ? 'Completed' : 'Pending'
+                               enhancedStep === 'OUTREACH_INITIATED' ? 'Contacting' :
+                               enhancedStep === 'OUTREACH_SCHEDULING' ? 'Scheduling' :
+                               enhancedStep === 'OUTREACH_SCHEDULED' ? 'Scheduled' :
+                               enhancedStep === 'EN_ROUTE' ? 'En Route' :
+                               enhancedStep === 'ARRIVED' ? 'Arrived' :
+                               enhancedStep === 'EVALUATING' ? 'Evaluating' :
+                               enhancedStep === 'COMPLETED' ? 'Completed' : 'Pending'
                              : 'Pending'}
                           </Badge>
                         </div>
