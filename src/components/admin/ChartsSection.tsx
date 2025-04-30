@@ -5,27 +5,32 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-// Sample data for charts
-const barData = [
-  { name: 'Mon', value: 2200 },
-  { name: 'Tue', value: 2800 },
-  { name: 'Wed', value: 3000 },
-  { name: 'Thu', value: 4000 },
-  { name: 'Fri', value: 2800 },
-  { name: 'Sat', value: 2600 },
-  { name: 'Sun', value: 2500 },
-];
+interface ChartsSectionProps {
+  barData?: { name: string; value: number }[];
+  pieData?: { name: string; value: number; color: string }[];
+  className?: string;
+}
 
-const pieData = [
-  { name: 'Maintenance', value: 2500, color: '#9eceac' },
-  { name: 'Repair', value: 1000, color: '#e6d9ac' },
-  { name: 'Taxes', value: 800, color: '#afc4e6' },
-  { name: 'Saving', value: 450, color: '#bfadd3' },
-];
-
-const ChartsSection: React.FC = () => {
+const ChartsSection: React.FC<ChartsSectionProps> = ({ 
+  barData = [
+    { name: 'Mon', value: 2200 },
+    { name: 'Tue', value: 2800 },
+    { name: 'Wed', value: 3000 },
+    { name: 'Thu', value: 4000 },
+    { name: 'Fri', value: 2800 },
+    { name: 'Sat', value: 2600 },
+    { name: 'Sun', value: 2500 },
+  ],
+  pieData = [
+    { name: 'Maintenance', value: 2500, color: '#9eceac' },
+    { name: 'Repair', value: 1000, color: '#e6d9ac' },
+    { name: 'Taxes', value: 800, color: '#afc4e6' },
+    { name: 'Saving', value: 450, color: '#bfadd3' },
+  ],
+  className
+}) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 ${className}`}>
       <Card>
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
@@ -102,7 +107,7 @@ const ChartsSection: React.FC = () => {
             </ResponsiveContainer>
             <div className="absolute text-center">
               <p className="text-muted-foreground text-sm">Total</p>
-              <p className="text-2xl font-bold">$4,750</p>
+              <p className="text-2xl font-bold">${pieData.reduce((sum, item) => sum + item.value, 0).toLocaleString()}</p>
             </div>
           </div>
           

@@ -13,9 +13,11 @@ import ActivityCards from '@/components/admin/ActivityCards';
 import KeyMetricsCards from '@/components/admin/KeyMetricsCards';
 import AIOutreachStats from '@/components/admin/AIOutreachStats';
 import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
-import LastTransactions from '@/components/admin/LastTransactions';
+import CostBreakdown from '@/components/admin/CostBreakdown';
 import { api } from '@/services/api';
 import { Evaluator as EvaluatorProfile } from '@/components/EvaluatorProfile';
+import { ActivityItem } from '@/components/admin/RecentActivityFeed';
+import { generateDemoActivities } from '@/utils/demoActivityData';
 
 // Define the types we need since they're not exported from the API
 interface Evaluator {
@@ -65,84 +67,11 @@ interface Transaction {
   date: string;
 }
 
-// Define ActivityItem type to match RecentActivityFeed
-interface ActivityItem {
-  id: string;
-  type: 'evaluation_complete' | 'outreach_success' | 'booking_confirmed' | 'system_alert';
-  message: string;
-  timestamp: string;
-  read: boolean;
-}
-
-// Sample activity data
-const activityData = [
-  {
-    id: '1',
-    user: 'John Smith',
-    action: 'created an evaluation order',
-    target: '123 Main St. Apartment',
-    time: '2 hours ago'
-  },
-  {
-    id: '2',
-    user: 'Sarah Johnson',
-    action: 'scheduled a viewing',
-    target: '456 Park Ave Condo',
-    time: '4 hours ago'
-  },
-  {
-    id: '3',
-    user: 'Michael Brown',
-    action: 'completed a payment',
-    target: '$249.99',
-    time: '5 hours ago'
-  },
-  {
-    id: '4',
-    user: 'Emily Davis',
-    action: 'submitted feedback',
-    target: 'Evaluator Report #4592',
-    time: '1 day ago'
-  },
-  {
-    id: '5',
-    user: 'Robert Wilson',
-    action: 'requested evaluation',
-    target: '789 Ocean Blvd House',
-    time: '1 day ago'
-  }
-];
-
-// Convert user activity to ActivityItem format
-const convertToActivityItems = (data: any[]): ActivityItem[] => {
-  return data.map(item => ({
-    id: item.id,
-    type: 'evaluation_complete' as const,
-    message: `${item.user} ${item.action} ${item.target}`,
-    timestamp: item.time,
-    read: false
-  }));
-};
-
-const activityItems = convertToActivityItems(activityData);
-
 // Add props interface for AdminSidebar
 interface AdminSidebarProps {
   open: boolean;
   onClose: () => void;
   isMobile: boolean;
-}
-
-// Add props interface for AdminTopBar
-interface AdminTopBarProps {
-  searchTerm: string;
-  setSearchTerm: () => void;
-  onOpenSidebar: () => void;
-}
-
-// Add props interface for ActivityCards
-interface ActivityCardsProps {
-  completedOrders: Order[];
 }
 
 const Admin: React.FC = () => {
@@ -155,6 +84,8 @@ const Admin: React.FC = () => {
   const [salesData, setSalesData] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     // Check if mobile on mount and whenever window resizes
@@ -178,7 +109,7 @@ const Admin: React.FC = () => {
         console.error("Failed to load admin metrics:", err);
       });
     
-    // Load orders for the pending orders widget
+    // Load orders for the pending orders widget and derive user activities
     api.getOrders()
       .then(orders => {
         const pending = orders.filter(order => order.status === 'Pending');
@@ -187,9 +118,28 @@ const Admin: React.FC = () => {
         // Also set completed orders for ActivityCards
         const completed = orders.filter(order => order.status === 'Completed' || order.status === 'Report Ready');
         setCompletedOrders(completed as Order[]);
+        
+        // Generate activity items based on orders
+        const orderActivities: ActivityItem[] = orders.map(order => ({
+          id: `order-${order.id}`,
+          type: order.status === 'Completed' ? 'evaluation_complete' : 
+                order.status === 'Report Ready' ? 'evaluation_complete' : 
+                'booking_confirmed',
+          message: `${order.tenantName} ordered evaluation for ${order.properties[0].address.split(',')[0]}`,
+          timestamp: order.createdAt,
+          read: false,
+          userId: order.userId,
+          userName: order.tenantName
+        }));
+        
+        // Combine with demo activities
+        const demoActivities = generateDemoActivities();
+        setActivities([...orderActivities, ...demoActivities]);
       })
       .catch(err => {
         console.error("Failed to load orders:", err);
+        // Fallback to demo activities if real data fails to load
+        setActivities(generateDemoActivities());
       });
     
     // Load evaluators for the assignment widget
@@ -244,10 +194,46 @@ const Admin: React.FC = () => {
           .then(orders => {
             const pending = orders.filter(order => order.status === 'Pending');
             setPendingOrders(pending as Order[]);
+            
+            // Update completed orders
+            const completed = orders.filter(order => 
+              order.status === 'Completed' || order.status === 'Report Ready'
+            );
+            setCompletedOrders(completed as Order[]);
+            
+            // Update activities
+            const orderActivities: ActivityItem[] = orders.map(order => ({
+              id: `order-${order.id}`,
+              type: order.status === 'Completed' ? 'evaluation_complete' : 'booking_confirmed',
+              message: `${order.tenantName} ordered evaluation for ${order.properties[0].address.split(',')[0]}`,
+              timestamp: order.createdAt,
+              read: false,
+              userId: order.userId,
+              userName: order.tenantName
+            }));
+            
+            // Keep existing demo activities
+            const demoActivities = activities.filter(
+              activity => !activity.id.startsWith('order-')
+            );
+            setActivities([...orderActivities, ...demoActivities]);
           })
           .catch(err => {
             console.error("Failed to refresh orders:", err);
           });
+      } else if (data.type === 'USER_CREATED' || data.type === 'USER_UPDATED') {
+        // Add user registration/update activity
+        const userActivity: ActivityItem = {
+          id: `user-${Date.now()}`,
+          type: 'user_registered',
+          message: `New user registered: ${data.user?.name || 'Unknown'}`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          userId: data.user?.id,
+          userName: data.user?.name
+        };
+        
+        setActivities(prev => [userActivity, ...prev]);
       }
     });
     
@@ -285,9 +271,8 @@ const Admin: React.FC = () => {
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminTopBar 
-          searchTerm="" 
-          setSearchTerm={() => {}} 
-          onOpenSidebar={() => setSidebarOpen(true)} 
+          searchTerm={searchTerm} 
+          setSearchTerm={setSearchTerm} 
         />
 
         {/* Scrollable main content */}
@@ -295,14 +280,14 @@ const Admin: React.FC = () => {
           <div className="container max-w-7xl mx-auto px-4 py-6">
             <AdminHeader 
               userName="Admin" 
-              searchTerm=""
-              setSearchTerm={() => {}}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
             />
 
             {/* Main dashboard grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-              {/* First column: 1/3 width on large screens */}
-              <div className="lg:col-span-1 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
+              {/* First column: sidebar-like content */}
+              <div className="lg:col-span-3 space-y-6">
                 {/* Admin metrics */}
                 {metrics && (
                   <AdminMetrics 
@@ -317,44 +302,50 @@ const Admin: React.FC = () => {
                 <EnhancedDashboardStats 
                   totalOrders={metrics?.orderCount || 0}
                   evaluationsInProgress={metrics?.pendingOrderCount || 0}
-                  totalRevenue={75000}
-                  evaluationCompletionRate={65}
+                  totalRevenue={completedOrders.reduce((sum, order) => sum + order.totalPrice, 0)}
+                  evaluationCompletionRate={metrics ? 
+                    Math.round((metrics.completedOrderCount / (metrics.orderCount || 1)) * 100) : 0}
                 />
-                
-                {/* Transactions */}
-                <LastTransactions transactions={transactions} />
                 
                 {/* AI Outreach Stats */}
                 <AIOutreachStats />
+                
+                {/* Recent activity feed */}
+                <RecentActivityFeed 
+                  activities={activities} 
+                  className="h-full" 
+                />
               </div>
               
-              {/* Second column: 2/3 width on large screens */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Key metrics cards */}
+              {/* Main content area */}
+              <div className="lg:col-span-9 space-y-6">
+                {/* Top row - Key metrics cards */}
                 <KeyMetricsCards orders={pendingOrders} />
                 
-                {/* Charts */}
-                <SalesChart />
+                {/* Second row - Charts section */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="md:col-span-2">
+                    <SalesChart />
+                  </div>
+                  <div className="md:col-span-1">
+                    <CostBreakdown />
+                  </div>
+                </div>
                 
-                {/* Activity cards */}
-                <ActivityCards completedOrders={completedOrders} />
-                
+                {/* Third row - Activity and heatmap */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Recent activity feed */}
-                  <RecentActivityFeed activities={activityItems} className="h-full" />
-                  
-                  {/* Property heatmap */}
+                  <ActivityCards completedOrders={completedOrders} />
                   <PropertyHeatmap className="h-full" />
                 </div>
                 
-                {/* Pending orders with evaluator assignment */}
+                {/* Fourth row - Pending orders with evaluator assignment */}
                 <PendingOrders 
                   pendingOrders={pendingOrders} 
                   evaluators={evaluators as unknown as EvaluatorProfile[]}
                   onUpdateStatus={handleUpdateOrderStatus}
                 />
                 
-                {/* Pending inquiries */}
+                {/* Fifth row - Pending inquiries */}
                 <PendingInquiries />
               </div>
             </div>

@@ -1,15 +1,18 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, CheckCircle, AlertCircle, Clock, Calendar } from 'lucide-react';
+import { Activity, CheckCircle, AlertCircle, Clock, Calendar, UserCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
-interface ActivityItem {
+export interface ActivityItem {
   id: string;
-  type: 'evaluation_complete' | 'outreach_success' | 'booking_confirmed' | 'system_alert';
+  type: 'evaluation_complete' | 'outreach_success' | 'booking_confirmed' | 'system_alert' | 'user_registered' | 'user_login';
   message: string;
   timestamp: string;
   read: boolean;
+  userId?: string;
+  userName?: string;
 }
 
 interface RecentActivityFeedProps {
@@ -29,10 +32,25 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
         return <Activity className="h-5 w-5 text-primary" />;
       case 'booking_confirmed':
         return <Calendar className="h-5 w-5 text-blue-500" />;
+      case 'user_registered':
+      case 'user_login':
+        return <UserCircle2 className="h-5 w-5 text-indigo-500" />;
       case 'system_alert':
         return <AlertCircle className="h-5 w-5 text-amber-500" />;
       default:
         return <Clock className="h-5 w-5 text-muted-foreground" />;
+    }
+  };
+  
+  // Format timestamp to relative time (e.g., "2 hours ago")
+  const formatTimestamp = (timestamp: string): string => {
+    if (timestamp.includes('ago')) return timestamp; // Already formatted
+    
+    try {
+      const date = new Date(timestamp);
+      return format(date, 'MMM d, h:mm a');
+    } catch (e) {
+      return timestamp;
     }
   };
   
@@ -62,7 +80,10 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">{activity.message}</p>
-                    <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatTimestamp(activity.timestamp)}
+                      {activity.userName && ` • ${activity.userName}`}
+                    </p>
                   </div>
                 </li>
               ))}
