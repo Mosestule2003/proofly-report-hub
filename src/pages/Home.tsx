@@ -10,6 +10,7 @@ import { AgentContact } from '@/services/api';
 import { useLoadScript, Libraries } from '@react-google-maps/api';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
+import ProoflyRoadmap from '@/components/ProoflyRoadmap';
 
 // Define libraries correctly for TypeScript
 const libraries: Libraries = ['places'];
@@ -355,37 +356,8 @@ const Home: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-10">How It Works</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-card p-6 rounded-lg shadow-md">
-              <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <Building className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Add Properties</h3>
-              <p className="text-muted-foreground">
-                Enter the properties you want to have evaluated. You can add as many as you need.
-              </p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-lg shadow-md">
-              <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <ShieldCheck className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Expert Review</h3>
-              <p className="text-muted-foreground">
-                Our professional evaluators will assess each property thoroughly.
-              </p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-lg shadow-md">
-              <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <Search className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Get Reports</h3>
-              <p className="text-muted-foreground">
-                Receive detailed reports with insights and recommendations for each property.
-              </p>
-            </div>
-          </div>
+          {/* Replace the grid with the ProoflyRoadmap component */}
+          <ProoflyRoadmap />
         </div>
       </section>
       
