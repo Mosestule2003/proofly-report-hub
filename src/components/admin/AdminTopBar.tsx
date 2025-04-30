@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
+import { Button } from '@/components/ui/button';
 
 interface AdminTopBarProps {
   searchTerm: string;
@@ -26,7 +27,15 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({
   return (
     <div className="border-b p-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <div className="flex items-center gap-3">
+          {onOpenSidebar && (
+            <Button variant="ghost" size="icon" onClick={onOpenSidebar} className="lg:hidden">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Open sidebar</span>
+            </Button>
+          )}
+          <h1 className="text-2xl font-semibold">Dashboard</h1>
+        </div>
         
         <div className="flex items-center gap-4">
           <div className="relative">

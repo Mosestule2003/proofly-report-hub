@@ -14,42 +14,15 @@ import KeyMetricsCards from '@/components/admin/KeyMetricsCards';
 import AIOutreachStats from '@/components/admin/AIOutreachStats';
 import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
 import CostBreakdown from '@/components/admin/CostBreakdown';
-import { api } from '@/services/api';
+import { api, Order, OrderStatus } from '@/services/api';
 import { Evaluator as EvaluatorProfile } from '@/components/EvaluatorProfile';
 import { ActivityItem } from '@/components/admin/RecentActivityFeed';
 import { generateDemoActivities } from '@/utils/demoActivityData';
 
-// Define the types we need since they're not exported from the API
-interface Evaluator {
-  id: string;
-  name: string;
-  rating: number;
-  evaluationsCompleted: number;
-  bio: string;
-  avatarUrl?: string;
-}
-
+// Use existing Order type from API instead of redefining
 // Extended evaluator for internal admin use
-interface AdminEvaluator extends Evaluator {
-  completedEvaluations: number;
-  availability: 'Available' | 'Busy';
-  specialization: string;
-}
-
-interface Order {
-  id: string;
-  tenantName: string;
-  propertyAddress: string;
-  date: string;
-  status: string;
-  amount: number;
-  rating?: number;
-  userId: string;
-  properties: any[];
-  totalPrice: number;
-  discount: number;
-  createdAt: string;
-  evaluator?: Evaluator;
+interface AdminEvaluator extends EvaluatorProfile {
+  evaluationsCompleted: number;
 }
 
 interface AdminMetricsType {
@@ -67,20 +40,13 @@ interface Transaction {
   date: string;
 }
 
-// Add props interface for AdminSidebar
-interface AdminSidebarProps {
-  open: boolean;
-  onClose: () => void;
-  isMobile: boolean;
-}
-
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [metrics, setMetrics] = useState<AdminMetricsType | null>(null);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-  const [evaluators, setEvaluators] = useState<AdminEvaluator[]>([]);
+  const [evaluators, setEvaluators] = useState<EvaluatorProfile[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
@@ -113,23 +79,22 @@ const Admin: React.FC = () => {
     api.getOrders()
       .then(orders => {
         const pending = orders.filter(order => order.status === 'Pending');
-        setPendingOrders(pending as Order[]);
+        setPendingOrders(pending);
         
         // Also set completed orders for ActivityCards
-        const completed = orders.filter(order => order.status === 'Completed' || order.status === 'Report Ready');
-        setCompletedOrders(completed as Order[]);
+        const completed = orders.filter(order => order.status === 'Report Ready' || order.status === 'Completed');
+        setCompletedOrders(completed);
         
         // Generate activity items based on orders
         const orderActivities: ActivityItem[] = orders.map(order => ({
           id: `order-${order.id}`,
-          type: order.status === 'Completed' ? 'evaluation_complete' : 
-                order.status === 'Report Ready' ? 'evaluation_complete' : 
+          type: order.status === 'Report Ready' ? 'evaluation_complete' : 
                 'booking_confirmed',
-          message: `${order.tenantName} ordered evaluation for ${order.properties[0].address.split(',')[0]}`,
+          message: `Order placed for ${order.properties[0].address.split(',')[0]}`,
           timestamp: order.createdAt,
           read: false,
           userId: order.userId,
-          userName: order.tenantName
+          userName: order.userId // Using userId instead of tenantName
         }));
         
         // Combine with demo activities
@@ -145,23 +110,7 @@ const Admin: React.FC = () => {
     // Load evaluators for the assignment widget
     api.getAllEvaluators()
       .then(data => {
-        const typedEvaluators = data.map(evaluator => {
-          // Convert to our AdminEvaluator type with required properties
-          return {
-            id: evaluator.id,
-            name: evaluator.name,
-            rating: evaluator.rating,
-            completedEvaluations: evaluator.completedEvaluations || 0,
-            evaluationsCompleted: evaluator.evaluationsCompleted || 0,
-            bio: evaluator.bio || "Professional property evaluator",
-            availability: (evaluator.availability === 'Available' || evaluator.availability === 'Busy') 
-              ? evaluator.availability 
-              : 'Busy' as 'Available' | 'Busy',
-            specialization: evaluator.specialization || "Residential properties"
-          };
-        });
-        
-        setEvaluators(typedEvaluators);
+        setEvaluators(data);
       })
       .catch(err => {
         console.error("Failed to load evaluators:", err);
@@ -193,23 +142,23 @@ const Admin: React.FC = () => {
         api.getOrders()
           .then(orders => {
             const pending = orders.filter(order => order.status === 'Pending');
-            setPendingOrders(pending as Order[]);
+            setPendingOrders(pending);
             
             // Update completed orders
             const completed = orders.filter(order => 
-              order.status === 'Completed' || order.status === 'Report Ready'
+              order.status === 'Report Ready' || order.status === 'Completed'
             );
-            setCompletedOrders(completed as Order[]);
+            setCompletedOrders(completed);
             
             // Update activities
             const orderActivities: ActivityItem[] = orders.map(order => ({
               id: `order-${order.id}`,
-              type: order.status === 'Completed' ? 'evaluation_complete' : 'booking_confirmed',
-              message: `${order.tenantName} ordered evaluation for ${order.properties[0].address.split(',')[0]}`,
+              type: order.status === 'Report Ready' ? 'evaluation_complete' : 'booking_confirmed',
+              message: `Order placed for ${order.properties[0].address.split(',')[0]}`,
               timestamp: order.createdAt,
               read: false,
               userId: order.userId,
-              userName: order.tenantName
+              userName: order.userId // Using userId instead of tenantName
             }));
             
             // Keep existing demo activities
@@ -253,7 +202,7 @@ const Admin: React.FC = () => {
       // Refresh pending orders
       const allOrders = await api.getOrders();
       const pending = allOrders.filter(order => order.status === 'Pending');
-      setPendingOrders(pending as Order[]);
+      setPendingOrders(pending);
     } catch (err) {
       console.error("Failed to update order status:", err);
     }
@@ -262,17 +211,14 @@ const Admin: React.FC = () => {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar for desktop and slide-over for mobile */}
-      <AdminSidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        isMobile={isMobile}
-      />
+      <AdminSidebar />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminTopBar 
           searchTerm={searchTerm} 
           setSearchTerm={setSearchTerm} 
+          onOpenSidebar={() => setSidebarOpen(true)}
         />
 
         {/* Scrollable main content */}
@@ -320,7 +266,7 @@ const Admin: React.FC = () => {
               {/* Main content area */}
               <div className="lg:col-span-9 space-y-6">
                 {/* Top row - Key metrics cards */}
-                <KeyMetricsCards orders={pendingOrders} />
+                <KeyMetricsCards orders={pendingOrders as Order[]} />
                 
                 {/* Second row - Charts section */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -334,14 +280,14 @@ const Admin: React.FC = () => {
                 
                 {/* Third row - Activity and heatmap */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <ActivityCards completedOrders={completedOrders} />
+                  <ActivityCards completedOrders={completedOrders as Order[]} />
                   <PropertyHeatmap className="h-full" />
                 </div>
                 
                 {/* Fourth row - Pending orders with evaluator assignment */}
                 <PendingOrders 
                   pendingOrders={pendingOrders} 
-                  evaluators={evaluators as unknown as EvaluatorProfile[]}
+                  evaluators={evaluators}
                   onUpdateStatus={handleUpdateOrderStatus}
                 />
                 
