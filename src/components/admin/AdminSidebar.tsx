@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -24,6 +24,7 @@ const AdminSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
   
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: <LayoutDashboard className="h-5 w-5" /> },
@@ -39,16 +40,20 @@ const AdminSidebar = () => {
     navigate('/admin/login');
   };
   
+  const toggleCollapse = () => {
+    setCollapsed(!collapsed);
+  };
+  
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2">
+    <Sidebar collapsed={collapsed} onToggleCollapse={toggleCollapse}>
+      <SidebarHeader collapsed={collapsed}>
+        <div className={cn("flex items-center gap-2", collapsed ? "justify-center" : "")}>
           <div className="rounded-md bg-primary p-1.5">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M8 1L14 5V11L8 15L2 11V5L8 1Z" fill="white" />
             </svg>
           </div>
-          <span className="font-semibold text-lg">Proofly Admin</span>
+          {!collapsed && <span className="font-semibold text-lg">Proofly Admin</span>}
         </div>
       </SidebarHeader>
       
@@ -59,6 +64,7 @@ const AdminSidebar = () => {
             href={item.path} 
             icon={item.icon}
             active={location.pathname === item.path}
+            collapsed={collapsed}
             onClick={(e) => {
               e.preventDefault();
               navigate(item.path);
@@ -69,25 +75,35 @@ const AdminSidebar = () => {
         ))}
       </SidebarNav>
       
-      <SidebarFooter>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="/avatar.png" />
-              <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">{user?.name || 'Admin User'}</span>
-              <span className="text-xs text-muted-foreground">{user?.email || 'admin@example.com'}</span>
+      <SidebarFooter collapsed={collapsed}>
+        {collapsed ? (
+          <Avatar className="h-8 w-8">
+            <AvatarImage src="/avatar.png" />
+            <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
+          </Avatar>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src="/avatar.png" />
+                <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{user?.name || 'Admin User'}</span>
+                <span className="text-xs text-muted-foreground">{user?.email || 'admin@example.com'}</span>
+              </div>
             </div>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Sign Out
+            </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
-            Sign Out
-          </Button>
-        </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
 };
+
+// Import cn from lib/utils
+import { cn } from '@/lib/utils';
 
 export default AdminSidebar;

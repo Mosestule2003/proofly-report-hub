@@ -22,7 +22,7 @@ import { generateDemoActivities } from '@/utils/demoActivityData';
 // Use existing Order type from API instead of redefining
 // Extended evaluator for internal admin use
 interface AdminEvaluator extends EvaluatorProfile {
-  evaluationsCompleted: number;
+  evaluationsCompleted?: number;
 }
 
 interface AdminMetricsType {
@@ -78,11 +78,13 @@ const Admin: React.FC = () => {
     // Load orders for the pending orders widget and derive user activities
     api.getOrders()
       .then(orders => {
-        const pending = orders.filter(order => order.status === 'Pending');
+        const pending = orders.filter(order => order.status === 'Pending' || 
+                                              order.status === 'Evaluator Assigned' || 
+                                              order.status === 'In Progress');
         setPendingOrders(pending);
         
         // Also set completed orders for ActivityCards
-        const completed = orders.filter(order => order.status === 'Report Ready' || order.status === 'Completed');
+        const completed = orders.filter(order => order.status === 'Report Ready');
         setCompletedOrders(completed);
         
         // Generate activity items based on orders
@@ -90,7 +92,7 @@ const Admin: React.FC = () => {
           id: `order-${order.id}`,
           type: order.status === 'Report Ready' ? 'evaluation_complete' : 
                 'booking_confirmed',
-          message: `Order placed for ${order.properties[0].address.split(',')[0]}`,
+          message: `Order placed for ${order.properties[0]?.address?.split(',')[0] || 'Unknown location'}`,
           timestamp: order.createdAt,
           read: false,
           userId: order.userId,
@@ -141,12 +143,16 @@ const Admin: React.FC = () => {
         // Refresh orders when there's an update
         api.getOrders()
           .then(orders => {
-            const pending = orders.filter(order => order.status === 'Pending');
+            const pending = orders.filter(order => 
+              order.status === 'Pending' || 
+              order.status === 'Evaluator Assigned' || 
+              order.status === 'In Progress'
+            );
             setPendingOrders(pending);
             
             // Update completed orders
             const completed = orders.filter(order => 
-              order.status === 'Report Ready' || order.status === 'Completed'
+              order.status === 'Report Ready'
             );
             setCompletedOrders(completed);
             
@@ -154,11 +160,11 @@ const Admin: React.FC = () => {
             const orderActivities: ActivityItem[] = orders.map(order => ({
               id: `order-${order.id}`,
               type: order.status === 'Report Ready' ? 'evaluation_complete' : 'booking_confirmed',
-              message: `Order placed for ${order.properties[0].address.split(',')[0]}`,
+              message: `Order placed for ${order.properties[0]?.address?.split(',')[0] || 'Unknown location'}`,
               timestamp: order.createdAt,
               read: false,
               userId: order.userId,
-              userName: order.userId // Using userId instead of tenantName
+              userName: order.userId 
             }));
             
             // Keep existing demo activities
@@ -201,7 +207,9 @@ const Admin: React.FC = () => {
       await api.updateOrderStatus(orderId, newStatus);
       // Refresh pending orders
       const allOrders = await api.getOrders();
-      const pending = allOrders.filter(order => order.status === 'Pending');
+      const pending = allOrders.filter(order => order.status === 'Pending' || 
+                                              order.status === 'Evaluator Assigned' || 
+                                              order.status === 'In Progress');
       setPendingOrders(pending);
     } catch (err) {
       console.error("Failed to update order status:", err);
@@ -210,7 +218,7 @@ const Admin: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar for desktop and slide-over for mobile */}
+      {/* Sidebar for desktop */}
       <AdminSidebar />
 
       {/* Main content area */}
