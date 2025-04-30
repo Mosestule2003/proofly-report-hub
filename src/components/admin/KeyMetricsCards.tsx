@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,9 +21,10 @@ interface Order {
 
 interface KeyMetricsCardsProps {
   orders: Order[];
+  className?: string; // Added className prop
 }
 
-const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [] }) => {
+const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [], className = '' }) => {
   // Ensure safe calculations even if properties is undefined
   const totalProperties = orders.reduce((acc, order) => 
     acc + (Array.isArray(order.properties) ? order.properties.length : 0), 0);
@@ -35,7 +35,7 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [] }) => {
            typeof order.amount === 'number' ? order.amount : 0), 0);
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 ${className}`}>
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
