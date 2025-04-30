@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { api } from '@/services/api';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 interface AddUserDialogProps {
   open: boolean;
@@ -54,11 +55,27 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onOpenChange }) => 
       return;
     }
     
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      await api.createUser(formData);
-      toast.success(`User ${formData.name} has been created successfully`);
+      // Call the API to create the user
+      const newUser = await api.createUser(formData);
+      toast.success(`User ${newUser.name} has been created successfully`);
+      
+      // Clear the form
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'tenant',
+      });
+      
+      // Close the dialog
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating user:', error);
@@ -76,6 +93,7 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onOpenChange }) => 
             <DialogTitle>Add New User</DialogTitle>
             <DialogDescription>
               Create a new user account with specified role and permissions.
+              Users created here can log in to the platform.
             </DialogDescription>
           </DialogHeader>
           
@@ -116,6 +134,9 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onOpenChange }) => 
                 placeholder="••••••••"
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Password must be at least 6 characters long
+              </p>
             </div>
             
             <div className="grid gap-2">
@@ -140,7 +161,12 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onOpenChange }) => 
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create User'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Creating...
+                </>
+              ) : 'Create User'}
             </Button>
           </DialogFooter>
         </form>

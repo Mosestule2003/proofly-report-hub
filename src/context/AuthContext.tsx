@@ -1,23 +1,26 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { api } from '@/services/api';
 
 export interface User {
   id: string;
   email: string;
   name: string;
   role: 'tenant' | 'admin';
-  createdAt?: string; // Add createdAt property to fix the TypeScript error
+  createdAt?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isImpersonating: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   loginAdmin: (email: string, password: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  returnToAdmin: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,18 +34,22 @@ export const mockUsers: User[] = [
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
   
   // Check if user is already logged in
   useEffect(() => {
     const storedUser = localStorage.getItem('proofly_user');
+    const adminReturnId = localStorage.getItem('admin_return_user');
     
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
+        setIsImpersonating(!!adminReturnId);
       } catch (error) {
         console.error('Error parsing stored user:', error);
         localStorage.removeItem('proofly_user');
+        localStorage.removeItem('admin_return_user');
       }
     }
     
@@ -118,19 +125,51 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   
   const logout = () => {
+    // If impersonating, clear that state too
+    if (isImpersonating) {
+      localStorage.removeItem('admin_return_user');
+      setIsImpersonating(false);
+    }
+    
     setUser(null);
     localStorage.removeItem('proofly_user');
     toast.info("Logged out successfully");
+  };
+  
+  // Method to return to admin after impersonating
+  const returnToAdmin = async () => {
+    if (!isImpersonating) {
+      toast.error("Not currently impersonating a user");
+      return;
+    }
+    
+    try {
+      await api.returnToAdmin();
+      
+      // Update local state based on the new user from localStorage
+      const storedUser = localStorage.getItem('proofly_user');
+      if (storedUser) {
+        const adminUser = JSON.parse(storedUser);
+        setUser(adminUser);
+        setIsImpersonating(false);
+        toast.success(`Returned to admin account: ${adminUser.name}`);
+      }
+    } catch (error) {
+      console.error('Error returning to admin:', error);
+      toast.error("Failed to return to admin account");
+    }
   };
   
   const value = {
     user,
     isAuthenticated: !!user,
     isLoading,
+    isImpersonating,
     login,
     loginAdmin,
     signup,
-    logout
+    logout,
+    returnToAdmin
   };
   
   return (

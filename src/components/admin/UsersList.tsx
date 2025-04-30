@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/services/api';
-import { Users, User as UserIcon, Shield, Mail, Calendar, UserPlus, Trash2, Loader2 } from 'lucide-react';
+import { Users, User as UserIcon, Shield, Mail, Calendar, UserPlus, Trash2, Loader2, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import {
@@ -35,6 +36,7 @@ interface User {
 }
 
 const UsersList: React.FC<UsersListProps> = ({ className }) => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
@@ -138,6 +140,10 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
     setSearchTerm(e.target.value);
   };
 
+  const viewUserDetails = (userId: string) => {
+    navigate(`/admin/users/${userId}`);
+  };
+
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
@@ -217,7 +223,15 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline">View Details</Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => viewUserDetails(user.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View
+                        </Button>
                         <Button 
                           size="sm" 
                           variant="destructive" 

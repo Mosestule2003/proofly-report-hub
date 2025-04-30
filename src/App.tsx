@@ -19,6 +19,7 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import AdminUsers from "./pages/AdminUsers";
 import AdminOrders from "./pages/AdminOrders";
+import AdminUserDetail from "./pages/AdminUserDetail"; // New import
 import AdminLogin from "./pages/AdminLogin";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import NotFound from "./pages/NotFound";
@@ -55,6 +56,7 @@ const App = () => (
                     <Route element={<ProtectedRoute allowedRoles={['admin']} redirectPath="/admin/login" />}>
                       <Route path="/admin" element={<Admin />} />
                       <Route path="/admin/users" element={<AdminUsers />} />
+                      <Route path="/admin/users/:userId" element={<AdminUserDetail />} /> {/* New route */}
                       <Route path="/admin/orders" element={<AdminOrders />} />
                     </Route>
                     

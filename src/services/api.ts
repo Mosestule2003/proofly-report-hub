@@ -664,6 +664,64 @@ export const api = {
     return users;
   },
   
+  getUserById: async (userId: string): Promise<User | null> => {
+    // Simulate API delay
+    await new Promise(r => setTimeout(r, 300));
+    
+    const user = users.find(u => u.id === userId);
+    return user || null;
+  },
+  
+  updateUser: async (userId: string, userData: Partial<User>): Promise<User | null> => {
+    // Simulate API delay
+    await new Promise(r => setTimeout(r, 800));
+    
+    // Find user to update
+    const userIndex = users.findIndex(u => u.id === userId);
+    
+    if (userIndex === -1) {
+      throw new Error('User not found');
+    }
+    
+    // Update user
+    const updatedUser = {
+      ...users[userIndex],
+      ...userData,
+      // Don't allow changing these fields
+      id: users[userIndex].id,
+      role: userData.role || users[userIndex].role,
+    };
+    
+    // Update users array
+    users[userIndex] = updatedUser;
+    
+    // Notify WebSocket listeners
+    notifyWebSocketListeners('users', { 
+      type: 'USERS_UPDATED', 
+      users,
+      updatedUser 
+    });
+    
+    return updatedUser;
+  },
+  
+  updateUserPassword: async (userId: string, newPassword: string): Promise<boolean> => {
+    // Simulate API delay
+    await new Promise(r => setTimeout(r, 600));
+    
+    // Find user to update
+    const userIndex = users.findIndex(u => u.id === userId);
+    
+    if (userIndex === -1) {
+      throw new Error('User not found');
+    }
+    
+    // In a real app, we would hash the password, but here we just pretend we did
+    console.log(`Password updated for user ${users[userIndex].name}`);
+    
+    return true;
+  },
+  
   deleteUser: async (userId: string): Promise<boolean> => {
     // Simulate API delay
     await new Promise(r => setTimeout(r, 800));
@@ -738,6 +796,53 @@ export const api = {
     console.log(`New user created: ${newUser.name} (${newUser.role})`);
     
     return newUser;
+  },
+  
+  // Impersonation functionality
+  impersonateUser: async (userId: string): Promise<boolean> => {
+    // Simulate API delay
+    await new Promise(r => setTimeout(r, 800));
+    
+    // Find user to impersonate
+    const user = users.find(u => u.id === userId);
+    
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    // Set the impersonated user in localStorage to simulate login
+    localStorage.setItem('proofly_user', JSON.stringify(user));
+    
+    console.log(`Admin is now impersonating ${user.name}`);
+    
+    return true;
+  },
+  
+  // Return to admin after impersonating
+  returnToAdmin: async (): Promise<boolean> => {
+    // Get the stored admin user ID
+    const adminUserId = localStorage.getItem('admin_return_user');
+    
+    if (!adminUserId) {
+      throw new Error('No admin user to return to');
+    }
+    
+    // Find the admin user
+    const adminUser = users.find(u => u.id === adminUserId);
+    
+    if (!adminUser || adminUser.role !== 'admin') {
+      throw new Error('Admin user not found');
+    }
+    
+    // Set the admin user in localStorage to simulate login
+    localStorage.setItem('proofly_user', JSON.stringify(adminUser));
+    
+    // Remove the stored admin user ID
+    localStorage.removeItem('admin_return_user');
+    
+    console.log(`Returned to admin ${adminUser.name}`);
+    
+    return true;
   },
   
   // New subscription methods
