@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 export interface Evaluator {
   id: string;
   name: string;
-  avatarUrl: string;
+  avatarUrl: string; // Keep this required
   rating: number;
   evaluationsCompleted: number;
   bio: string;

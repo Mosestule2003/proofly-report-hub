@@ -8,18 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StarIcon } from 'lucide-react';
 import { Property } from '@/context/CartContext';
-
-interface Evaluator {
-  id: string;
-  name: string;
-  avatar: string;
-  rating: number;
-  properties: number;
-  experience: string;
-  evaluationsCompleted: number;
-  bio: string;
-  avatarUrl?: string; // Optional for compatibility
-}
+import { Evaluator } from './EvaluatorProfile';
 
 interface OrderProcessingModalProps {
   properties: Property[];
@@ -135,7 +124,7 @@ const OrderProcessingModal: React.FC<OrderProcessingModalProps> = ({ properties,
         id: "e123",
         name: "Alex Johnson",
         avatar: "/placeholder.svg",
-        avatarUrl: "/placeholder.svg", // For compatibility
+        avatarUrl: "/placeholder.svg", // Now properly set the required field
         rating: 4.8,
         properties: 352,
         experience: "5 years",
@@ -332,7 +321,7 @@ const OrderProcessingModal: React.FC<OrderProcessingModalProps> = ({ properties,
           <div className="mb-6 border-b pb-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={evaluator.avatar} alt={evaluator.name} />
+                <AvatarImage src={evaluator.avatarUrl || evaluator.avatar} alt={evaluator.name} />
                 <AvatarFallback>{evaluator.name.substring(0, 2)}</AvatarFallback>
               </Avatar>
               <div>
