@@ -10,11 +10,13 @@ import { Order } from '@/services/api';
 interface LastTransactionsProps {
   transactions: Order[];
   onViewTransaction: (orderId: string) => void;
+  className?: string; // Added className prop as optional
 }
 
 const LastTransactions: React.FC<LastTransactionsProps> = ({ 
   transactions,
-  onViewTransaction 
+  onViewTransaction,
+  className = '' // Added default empty string
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -27,7 +29,7 @@ const LastTransactions: React.FC<LastTransactionsProps> = ({
   };
   
   return (
-    <Card className="col-span-2">
+    <Card className={`col-span-2 ${className}`}> // Use the className prop here
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Last Transactions</CardTitle>
         <Button variant="outline" size="sm">View All</Button>
