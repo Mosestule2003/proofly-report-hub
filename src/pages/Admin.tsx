@@ -16,6 +16,7 @@ import CostBreakdown from '@/components/admin/CostBreakdown';
 import LastTransactions from '@/components/admin/LastTransactions';
 import PendingInquiries from '@/components/admin/PendingInquiries';
 import UsersList from '@/components/admin/UsersList';
+import { AIOutreachStats } from '@/components/admin/AIOutreachStats';
 
 // Import existing order detail components
 import PendingOrders from '@/components/admin/PendingOrders';
@@ -246,6 +247,7 @@ const Admin: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <SalesChart />
             <CostBreakdown />
+            <AIOutreachStats />
           </div>
           
           {/* Users section */}
@@ -258,6 +260,7 @@ const Admin: React.FC = () => {
             <LastTransactions 
               transactions={orders} 
               onViewTransaction={handleViewTransaction}
+              className="md:col-span-2"
             />
             <PendingInquiries />
           </div>

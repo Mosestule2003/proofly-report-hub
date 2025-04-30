@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Building, CheckCircle, MapPin, Clock, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +15,7 @@ interface PropertyEvaluationTrackerProps {
 
 const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ order }) => {
   const [progressValue, setProgressValue] = useState(0);
+  const [hoveredStep, setHoveredStep] = useState<string | null>(null);
 
   // Calculate which step of the process we're on (as a percentage)
   useEffect(() => {
@@ -112,7 +112,46 @@ const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ o
     }
   };
   
+  // Get estimated time for each step
+  const getStepTime = (step: string): string => {
+    if (!order || !order.currentStep) return '';
+    
+    // Use the order's createdAt as a base timestamp
+    const baseTime = new Date(order.createdAt);
+    let minutesToAdd = 0;
+    
+    switch(step) {
+      case 'PENDING_MATCH': 
+        return 'Typically 1-3 minutes';
+      case 'EN_ROUTE':
+        minutesToAdd = 10;
+        break;
+      case 'ARRIVED':
+        minutesToAdd = 25;
+        break;
+      case 'EVALUATING':
+        minutesToAdd = 35;
+        break;
+      case 'COMPLETED':
+        minutesToAdd = 50;
+        break;
+      case 'REPORT_READY':
+        minutesToAdd = 60;
+        break;
+      default:
+        return '';
+    }
+    
+    // Add minutes to base time
+    const stepTime = new Date(baseTime.getTime() + minutesToAdd * 60000);
+    return stepTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+  
   if (!order) return null;
+  
+  // Define the evaluation steps for the progress bar
+  const evaluationSteps: OrderStepStatus[] = ['PENDING_MATCH', 'EN_ROUTE', 'ARRIVED', 'EVALUATING', 'COMPLETED', 'REPORT_READY'];
+  const currentStepIndex = order.currentStep ? evaluationSteps.indexOf(order.currentStep) : 0;
   
   return (
     <div className="border border-dashed rounded-lg p-6 bg-muted/30">
@@ -124,19 +163,51 @@ const PropertyEvaluationTracker: React.FC<PropertyEvaluationTrackerProps> = ({ o
         </p>
       </div>
       
-      {/* Progress indicator */}
+      {/* Enhanced progress indicator */}
       <div className="mb-6 relative">
-        <div className="h-1 bg-muted-foreground/20 rounded-full mb-2">
+        <div className="h-1 bg-muted-foreground/20 rounded-full mb-4">
           <div 
             className="h-1 bg-primary rounded-full transition-all duration-500"
             style={{ width: `${progressValue}%` }}
           ></div>
         </div>
         
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Finding Evaluator</span>
-          <span>Evaluation</span>
-          <span>Report Ready</span>
+        <div className="flex justify-between relative">
+          {evaluationSteps.map((step, index) => {
+            const isActive = index <= currentStepIndex;
+            const isCurrentStep = index === currentStepIndex;
+            
+            return (
+              <div 
+                key={step} 
+                className="flex flex-col items-center relative"
+                style={{ width: `${100 / evaluationSteps.length}%` }}
+                onMouseEnter={() => setHoveredStep(step)}
+                onMouseLeave={() => setHoveredStep(null)}
+              >
+                <div 
+                  className={`w-4 h-4 rounded-full ${
+                    isActive 
+                      ? isCurrentStep 
+                        ? 'bg-primary animate-pulse' 
+                        : 'bg-primary' 
+                      : 'bg-muted-foreground/30'
+                  } mb-2`}
+                />
+                <span className="text-xs text-muted-foreground whitespace-nowrap absolute -left-1/2 right-1/2 text-center">
+                  {step.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ')}
+                </span>
+                
+                {/* Tooltip with time estimate */}
+                {hoveredStep === step && (
+                  <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-background border shadow-md rounded-md p-2 z-10 text-xs whitespace-nowrap">
+                    <span className="font-medium">{getStepTime(step)}</span>
+                    {isCurrentStep && <span className="text-primary"> (current)</span>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
       
