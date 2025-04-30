@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -11,7 +12,7 @@ interface ActivityCardsProps {
   className?: string; // Added className prop
 }
 
-const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders, className = '' }) => {
+export const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders, className = '' }) => {
   return (
     <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${className}`}>
       <Card>
@@ -134,4 +135,5 @@ const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders, classNam
   );
 };
 
+// Also add a default export for backward compatibility if needed
 export default ActivityCards;
