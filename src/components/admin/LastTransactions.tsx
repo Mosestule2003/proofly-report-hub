@@ -29,7 +29,7 @@ const LastTransactions: React.FC<LastTransactionsProps> = ({
   };
   
   return (
-    <Card className={`col-span-2 ${className}`}> // Use the className prop here
+    <Card className={`col-span-2 ${className}`}>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Last Transactions</CardTitle>
         <Button variant="outline" size="sm">View All</Button>
