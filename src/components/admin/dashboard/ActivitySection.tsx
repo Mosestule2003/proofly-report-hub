@@ -10,7 +10,7 @@ interface ActivitySectionProps {
 
 const ActivitySection: React.FC<ActivitySectionProps> = ({ activityItems }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
       {/* Recent activity feed */}
       <RecentActivityFeed activities={activityItems} className="h-full" />
       

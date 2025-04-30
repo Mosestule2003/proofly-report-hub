@@ -6,8 +6,6 @@ import { Evaluator } from '@/components/EvaluatorProfile';
 import KeyMetricsCards from '@/components/admin/KeyMetricsCards';
 import SalesChart from '@/components/admin/SalesChart';
 import ActivityCards from '@/components/admin/ActivityCards';
-import RecentActivityFeed from '@/components/admin/RecentActivityFeed';
-import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
 import PendingOrders from '@/components/admin/PendingOrders';
 import PendingInquiries from '@/components/admin/PendingInquiries';
 import ActivitySection from '@/components/admin/dashboard/ActivitySection';
@@ -28,7 +26,7 @@ const ContentColumn: React.FC<ContentColumnProps> = ({
   handleUpdateOrderStatus
 }) => {
   return (
-    <div className="lg:col-span-2 space-y-6">
+    <div className="lg:col-span-2 space-y-6 w-full">
       {/* Key metrics cards */}
       <KeyMetricsCards orders={pendingOrders} />
       

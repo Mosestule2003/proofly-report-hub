@@ -14,11 +14,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   setSearchTerm 
 }) => {
   return (
-    <AdminHeader
-      userName={userName}
-      searchTerm={searchTerm}
-      setSearchTerm={setSearchTerm}
-    />
+    <div className="w-full mb-6">
+      <AdminHeader
+        userName={userName}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
+    </div>
   );
 };
 
