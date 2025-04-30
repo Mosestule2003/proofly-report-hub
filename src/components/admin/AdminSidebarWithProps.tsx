@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -9,7 +9,8 @@ import {
   MessagesSquare, 
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Menu
 } from 'lucide-react';
 import { 
   Sidebar, 
@@ -21,6 +22,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface AdminSidebarWithPropsProps {
   open: boolean;
@@ -36,7 +38,7 @@ const AdminSidebarWithProps: React.FC<AdminSidebarWithPropsProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: <LayoutDashboard className="h-5 w-5" /> },
@@ -52,12 +54,14 @@ const AdminSidebarWithProps: React.FC<AdminSidebarWithPropsProps> = ({
     navigate('/admin/login');
   };
   
+  const sidebarWidth = collapsed ? 'w-[70px]' : 'w-64';
+  
   const sidebarProps = isMobile 
     ? { 
         className: `fixed inset-y-0 left-0 z-50 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'}`,
       } 
     : {
-        className: `transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`
+        className: `transition-all duration-300 ${sidebarWidth}`
       };
   
   return (
@@ -95,6 +99,7 @@ const AdminSidebarWithProps: React.FC<AdminSidebarWithPropsProps> = ({
                   size="icon" 
                   className="ml-auto" 
                   onClick={() => setCollapsed(!collapsed)}
+                  aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
                   {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                 </Button>
@@ -147,6 +152,16 @@ const AdminSidebarWithProps: React.FC<AdminSidebarWithPropsProps> = ({
                   <AvatarImage src="/avatar.png" />
                   <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
                 </Avatar>
+              </div>
+              {/* Collapsed sign out button */}
+              <div className="mt-3 flex justify-center">
+                <Button variant="outline" size="icon" title="Sign Out" onClick={handleLogout}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </Button>
               </div>
             </SidebarFooter>
           )}

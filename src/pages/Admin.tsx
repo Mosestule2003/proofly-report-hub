@@ -20,7 +20,7 @@ const Admin: React.FC = () => {
   } = useAdminDashboard();
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar for desktop and slide-over for mobile */}
       <AdminSidebarWithProps
         open={sidebarOpen}
