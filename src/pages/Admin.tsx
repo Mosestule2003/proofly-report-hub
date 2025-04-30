@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -34,6 +35,11 @@ interface Order {
   status: string;
   amount: number;
   rating?: number;
+  userId: string;
+  properties: any[];
+  totalPrice: number;
+  discount: number;
+  createdAt: string;
 }
 
 interface AdminMetricsType {
@@ -49,6 +55,15 @@ interface Transaction {
   status: 'completed' | 'pending' | 'failed';
   description: string;
   date: string;
+}
+
+// Define ActivityItem type to match RecentActivityFeed
+interface ActivityItem {
+  id: string;
+  type: 'evaluation_complete' | 'outreach_success' | 'booking_confirmed' | 'system_alert';
+  message: string;
+  timestamp: string;
+  read: boolean;
 }
 
 // Sample activity data
@@ -90,6 +105,19 @@ const activityData = [
   }
 ];
 
+// Convert user activity to ActivityItem format
+const convertToActivityItems = (data: any[]): ActivityItem[] => {
+  return data.map(item => ({
+    id: item.id,
+    type: 'evaluation_complete' as const,
+    message: `${item.user} ${item.action} ${item.target}`,
+    timestamp: item.time,
+    read: false
+  }));
+};
+
+const activityItems = convertToActivityItems(activityData);
+
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
@@ -126,7 +154,7 @@ const Admin: React.FC = () => {
     api.getOrders()
       .then(orders => {
         const pending = orders.filter(order => order.status === 'Pending');
-        setPendingOrders(pending);
+        setPendingOrders(pending as Order[]);
       })
       .catch(err => {
         console.error("Failed to load orders:", err);
@@ -135,7 +163,18 @@ const Admin: React.FC = () => {
     // Load evaluators for the assignment widget
     api.getAllEvaluators()
       .then(data => {
-        setEvaluators(data);
+        const typedEvaluators = data.map(evaluator => ({
+          id: evaluator.id,
+          name: evaluator.name,
+          rating: evaluator.rating,
+          completedEvaluations: evaluator.completedEvaluations,
+          availability: evaluator.availability === 'Available' || evaluator.availability === 'Busy' 
+            ? evaluator.availability 
+            : 'Busy' as 'Available' | 'Busy',
+          specialization: evaluator.specialization
+        }));
+        
+        setEvaluators(typedEvaluators);
       })
       .catch(err => {
         console.error("Failed to load evaluators:", err);
@@ -167,7 +206,7 @@ const Admin: React.FC = () => {
         api.getOrders()
           .then(orders => {
             const pending = orders.filter(order => order.status === 'Pending');
-            setPendingOrders(pending);
+            setPendingOrders(pending as Order[]);
           })
           .catch(err => {
             console.error("Failed to refresh orders:", err);
@@ -191,7 +230,7 @@ const Admin: React.FC = () => {
       // Refresh pending orders
       const allOrders = await api.getOrders();
       const pending = allOrders.filter(order => order.status === 'Pending');
-      setPendingOrders(pending);
+      setPendingOrders(pending as Order[]);
     } catch (err) {
       console.error("Failed to update order status:", err);
     }
@@ -238,7 +277,12 @@ const Admin: React.FC = () => {
                 )}
                 
                 {/* Condensed stats */}
-                <EnhancedDashboardStats />
+                <EnhancedDashboardStats 
+                  totalOrders={metrics?.orderCount || 0}
+                  evaluationsInProgress={metrics?.pendingOrderCount || 0}
+                  totalRevenue={75000}
+                  evaluationCompletionRate={65}
+                />
                 
                 {/* Transactions */}
                 <LastTransactions transactions={transactions} />
@@ -250,17 +294,17 @@ const Admin: React.FC = () => {
               {/* Second column: 2/3 width on large screens */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Key metrics cards */}
-                <KeyMetricsCards />
+                <KeyMetricsCards orders={pendingOrders} />
                 
                 {/* Charts */}
-                <SalesChart data={salesData} />
+                <SalesChart />
                 
                 {/* Activity cards */}
                 <ActivityCards />
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Recent activity feed */}
-                  <RecentActivityFeed activities={activityData} className="h-full" />
+                  <RecentActivityFeed activities={activityItems} className="h-full" />
                   
                   {/* Property heatmap */}
                   <PropertyHeatmap className="h-full" />
