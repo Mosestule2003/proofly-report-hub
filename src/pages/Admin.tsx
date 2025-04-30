@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -196,7 +197,7 @@ const Admin: React.FC = () => {
   }, []);
 
   // Handle assigning evaluator to order
-  const handleUpdateOrderStatus = async (orderId: string, newStatus: 'Evaluator Assigned' | 'In Progress') => {
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
       await api.updateOrderStatus(orderId, newStatus);
       // Refresh pending orders
@@ -266,7 +267,7 @@ const Admin: React.FC = () => {
               {/* Main content area */}
               <div className="lg:col-span-9 space-y-6">
                 {/* Top row - Key metrics cards */}
-                <KeyMetricsCards orders={pendingOrders as Order[]} />
+                <KeyMetricsCards orders={pendingOrders} />
                 
                 {/* Second row - Charts section */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -280,7 +281,7 @@ const Admin: React.FC = () => {
                 
                 {/* Third row - Activity and heatmap */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <ActivityCards completedOrders={completedOrders as Order[]} />
+                  <ActivityCards completedOrders={completedOrders} />
                   <PropertyHeatmap className="h-full" />
                 </div>
                 
