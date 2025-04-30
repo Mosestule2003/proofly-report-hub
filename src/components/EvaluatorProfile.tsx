@@ -13,25 +13,36 @@ export interface Evaluator {
 }
 
 // This component displays an evaluator's profile card
-const EvaluatorProfile: React.FC<{ evaluator: Evaluator }> = ({ evaluator }) => {
+interface EvaluatorProfileProps {
+  evaluator: Evaluator;
+  variant?: string; // Add variant prop for different styling options
+}
+
+const EvaluatorProfile: React.FC<EvaluatorProfileProps> = ({ 
+  evaluator,
+  variant
+}) => {
+  // Apply different styles based on variant
+  const isCompact = variant === 'compact';
+  
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col md:flex-row gap-4 items-center md:items-start">
-          <Avatar className="w-20 h-20">
+    <Card className={isCompact ? 'overflow-hidden' : ''}>
+      <CardContent className={`p-${isCompact ? '4' : '6'}`}>
+        <div className={`flex ${isCompact ? 'items-center' : 'flex-col md:flex-row gap-4 items-center md:items-start'}`}>
+          <Avatar className={`${isCompact ? 'w-12 h-12' : 'w-20 h-20'}`}>
             <AvatarImage src={evaluator.avatarUrl} alt={evaluator.name} />
             <AvatarFallback>{evaluator.name.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
           
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="font-semibold text-lg">{evaluator.name}</h3>
+          <div className={`flex-1 ${isCompact ? 'ml-3' : 'text-center md:text-left'}`}>
+            <h3 className={`font-semibold ${isCompact ? 'text-base' : 'text-lg'}`}>{evaluator.name}</h3>
             
-            <div className="flex items-center justify-center md:justify-start gap-1 mt-1">
+            <div className={`flex items-center ${isCompact ? '' : 'justify-center md:justify-start'} gap-1 mt-1`}>
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
                   <svg 
                     key={i}
-                    className={`w-4 h-4 ${i < Math.floor(evaluator.rating) ? "text-yellow-400" : "text-gray-300"}`} 
+                    className={`${isCompact ? 'w-3 h-3' : 'w-4 h-4'} ${i < Math.floor(evaluator.rating) ? "text-yellow-400" : "text-gray-300"}`} 
                     fill="currentColor" 
                     viewBox="0 0 20 20"
                   >
@@ -39,15 +50,17 @@ const EvaluatorProfile: React.FC<{ evaluator: Evaluator }> = ({ evaluator }) => 
                   </svg>
                 ))}
               </div>
-              <span className="text-sm font-medium">{evaluator.rating}</span>
-              <span className="text-xs text-muted-foreground ml-1">
+              <span className={`${isCompact ? 'text-xs' : 'text-sm'} font-medium`}>{evaluator.rating}</span>
+              <span className={`${isCompact ? 'text-xs' : 'text-sm'} text-muted-foreground ml-1`}>
                 ({evaluator.evaluationsCompleted} evaluations)
               </span>
             </div>
             
-            <p className="text-sm text-muted-foreground mt-2">
-              {evaluator.bio}
-            </p>
+            {!isCompact && (
+              <p className="text-sm text-muted-foreground mt-2">
+                {evaluator.bio}
+              </p>
+            )}
           </div>
         </div>
       </CardContent>

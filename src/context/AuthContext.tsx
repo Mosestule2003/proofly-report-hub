@@ -25,16 +25,34 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo - we export this so the API service can access it
+// Initialize mock users
 export const mockUsers: User[] = [
-  { id: '1', email: 'tenant@example.com', name: 'Demo Tenant', role: 'tenant' },
-  { id: '2', email: 'admin@example.com', name: 'Admin User', role: 'admin' },
+  { 
+    id: '1', 
+    email: 'tenant@example.com', 
+    name: 'Demo Tenant', 
+    role: 'tenant',
+    createdAt: new Date().toISOString()
+  },
+  { 
+    id: '2', 
+    email: 'admin@example.com', 
+    name: 'Admin User', 
+    role: 'admin',
+    createdAt: new Date().toISOString()
+  },
 ];
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
+  
+  // Sync mockUsers with API on mount
+  useEffect(() => {
+    // Sync our mockUsers with the API service
+    api.syncUsers(mockUsers);
+  }, []);
   
   // Check if user is already logged in
   useEffect(() => {
@@ -110,11 +128,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email,
       name,
       role: 'tenant',
-      createdAt: new Date().toISOString() // Include createdAt for new users
+      createdAt: new Date().toISOString()
     };
     
     // Add to mock users (in a real app, this would be stored in a database)
     mockUsers.push(newUser);
+    
+    // Sync users with API
+    api.syncUsers(mockUsers);
     
     // Log in the user
     setUser(newUser);

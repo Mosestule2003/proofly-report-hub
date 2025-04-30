@@ -1,11 +1,23 @@
 import { toast } from 'sonner';
 import { Property, LandlordInfo } from '@/context/CartContext';
-import { User as AuthUser, mockUsers } from '@/context/AuthContext';
 import { AppNotification } from '@/components/NotificationBell';
 import { Evaluator } from '@/components/EvaluatorProfile';
 
-// Re-export the User type for components to use
-export type User = AuthUser;
+// Define User type locally to avoid circular dependency with AuthContext
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+  role: 'tenant' | 'admin';
+  createdAt?: string;
+};
+
+// Define local mockUsers to avoid circular dependency
+// We'll sync this with the AuthContext's mockUsers when needed
+let users: User[] = [
+  { id: '1', email: 'tenant@example.com', name: 'Demo Tenant', role: 'tenant', createdAt: new Date().toISOString() },
+  { id: '2', email: 'admin@example.com', name: 'Admin User', role: 'admin', createdAt: new Date().toISOString() },
+];
 
 export type OrderStatus = 'Pending' | 'Evaluator Assigned' | 'In Progress' | 'Report Ready';
 export type OrderStepStatus = 
@@ -82,7 +94,6 @@ let orders: Order[] = [];
 let reports: Report[] = [];
 let notifications: { [userId: string]: AppNotification[] } = {};
 let salesData = [...mockSalesData];
-let users = [...mockUsers]; // Use a local copy that can be modified
 let evaluators: Evaluator[] = [
   {
     id: 'eval1',
@@ -1036,5 +1047,12 @@ export const api = {
         status: order.status,
       });
     });
+  },
+  
+  // Sync method to update our local users array with AuthContext's mockUsers
+  // This is called from AuthContext to keep the data in sync
+  syncUsers: (authUsers: User[]) => {
+    users = [...authUsers];
+    console.log("API service: Users synced with AuthContext");
   }
 };
