@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Building, CheckCircle, MapPin, Clock, Loader2, MessageSquare, CalendarCheck, Calendar } from 'lucide-react';
@@ -356,7 +355,7 @@ const OrderProcessingModal: React.FC<OrderProcessingModalProps> = ({ properties,
           <div className="mb-6 border rounded-md p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium">AI Outreach Progress</h3>
-              <Badge variant={outreachStatus === 'scheduled' ? 'success' : 'outline'}>
+              <Badge variant={outreachStatus === 'scheduled' ? 'secondary' : 'outline'}>
                 {outreachStatus === 'initial' ? 'Initial Contact' : 
                  outreachStatus === 'contacting' ? 'Scheduling' : 
                  'Scheduled'}

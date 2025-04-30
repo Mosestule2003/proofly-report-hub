@@ -1,17 +1,41 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building, BarChart3, CircleDollarSign, ArrowUp, ArrowDown } from 'lucide-react';
-import { Order } from '@/services/api';
+
+// Define the Order interface to match with what we're using
+interface Order {
+  id: string;
+  tenantName: string;
+  propertyAddress: string;
+  date: string;
+  status: string;
+  amount: number;
+  rating?: number;
+  userId: string;
+  properties: any[];
+  totalPrice: number;
+  discount: number;
+  createdAt: string;
+}
 
 interface KeyMetricsCardsProps {
   orders: Order[];
+  className?: string; // Added className prop
 }
 
-const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders }) => {
+const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [], className = '' }) => {
+  // Ensure safe calculations even if properties is undefined
+  const totalProperties = orders.reduce((acc, order) => 
+    acc + (Array.isArray(order.properties) ? order.properties.length : 0), 0);
+  
+  // Use totalPrice if available, fallback to amount
+  const totalRevenue = orders.reduce((acc, order) => 
+    acc + (typeof order.totalPrice === 'number' ? order.totalPrice : 
+           typeof order.amount === 'number' ? order.amount : 0), 0);
+  
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 ${className}`}>
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
@@ -21,7 +45,7 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders }) => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Properties</p>
-                <h2 className="text-3xl font-bold">{orders.reduce((acc, order) => acc + order.properties.length, 0)}</h2>
+                <h2 className="text-3xl font-bold">{totalProperties}</h2>
               </div>
             </div>
             <div>
@@ -29,7 +53,7 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders }) => {
                 <ArrowUp className="h-3 w-3" />
                 <span>20%</span>
               </Badge>
-              <p className="text-xs text-muted-foreground mt-1">Last month: {Math.floor(orders.reduce((acc, order) => acc + order.properties.length, 0) * 0.8)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Last month: {Math.floor(totalProperties * 0.8)}</p>
             </div>
           </div>
         </CardContent>
@@ -67,7 +91,7 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders }) => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <h2 className="text-3xl font-bold">${orders.reduce((acc, order) => acc + order.totalPrice, 0)}</h2>
+                <h2 className="text-3xl font-bold">${totalRevenue.toLocaleString()}</h2>
               </div>
             </div>
             <div>
@@ -75,7 +99,7 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders }) => {
                 <ArrowUp className="h-3 w-3" />
                 <span>15%</span>
               </Badge>
-              <p className="text-xs text-muted-foreground mt-1">Last month: ${Math.floor(orders.reduce((acc, order) => acc + order.totalPrice, 0) * 0.85)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Last month: ${Math.floor(totalRevenue * 0.85).toLocaleString()}</p>
             </div>
           </div>
         </CardContent>

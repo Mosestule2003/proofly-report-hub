@@ -5,22 +5,26 @@ import { Building, CircleDollarSign, Users, Gauge } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 interface EnhancedDashboardStatsProps {
-  totalOrders: number;
-  evaluationsInProgress: number;
-  totalRevenue: number;
-  evaluationCompletionRate: number;
+  totalOrders?: number;
+  evaluationsInProgress?: number;
+  totalRevenue?: number;
+  evaluationCompletionRate?: number;
   className?: string;
 }
 
 const EnhancedDashboardStats: React.FC<EnhancedDashboardStatsProps> = ({
-  totalOrders,
-  evaluationsInProgress,
-  totalRevenue,
-  evaluationCompletionRate,
+  totalOrders = 0,
+  evaluationsInProgress = 0,
+  totalRevenue = 0,
+  evaluationCompletionRate = 0,
   className
 }) => {
+  // Ensure we have a safe number for formatting
+  const formattedRevenue = typeof totalRevenue === 'number' ? 
+    totalRevenue.toLocaleString() : '0';
+  
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-4 gap-4 ${className}`}>
+    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 ${className}`}>
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center space-x-3">
@@ -59,7 +63,7 @@ const EnhancedDashboardStats: React.FC<EnhancedDashboardStatsProps> = ({
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Revenue</p>
-              <h2 className="text-2xl font-bold">${totalRevenue.toLocaleString()}</h2>
+              <h2 className="text-2xl font-bold">${formattedRevenue}</h2>
               <p className="text-xs text-green-600">↑ 8% from last month</p>
             </div>
           </div>

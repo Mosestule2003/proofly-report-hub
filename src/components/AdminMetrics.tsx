@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Building, ClipboardList, Clock } from 'lucide-react';
@@ -8,16 +7,18 @@ interface AdminMetricsProps {
   orderCount: number;
   pendingOrderCount: number;
   completedOrderCount: number;
+  className?: string; // Added className prop
 }
 
 const AdminMetrics: React.FC<AdminMetricsProps> = ({
   tenantCount,
   orderCount,
   pendingOrderCount,
-  completedOrderCount
+  completedOrderCount,
+  className = '' // Default empty string
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ${className}`}>
       <Card>
         <CardHeader className="pb-2">
           <CardDescription>Total Tenants</CardDescription>

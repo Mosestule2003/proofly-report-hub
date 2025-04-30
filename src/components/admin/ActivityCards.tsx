@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -9,11 +8,12 @@ import { Order } from '@/services/api';
 
 interface ActivityCardsProps {
   completedOrders: Order[];
+  className?: string; // Added className prop
 }
 
-const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders }) => {
+const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders, className = '' }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${className}`}>
       <Card>
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
