@@ -24,67 +24,70 @@ const EnhancedDashboardStats: React.FC<EnhancedDashboardStatsProps> = ({
     totalRevenue.toLocaleString() : '0';
   
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-4 gap-4 ${className}`}>
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-full">
-              <Building className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Orders</p>
-              <h2 className="text-2xl font-bold">{totalOrders}</h2>
-              <p className="text-xs text-green-600">↑ 12% from last month</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-amber-500/10 flex items-center justify-center rounded-full">
-              <Gauge className="h-6 w-6 text-amber-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">In Progress</p>
-              <h2 className="text-2xl font-bold">{evaluationsInProgress}</h2>
-              <Progress value={evaluationCompletionRate} className="h-1 w-20 mt-1" />
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm">Key Stats</CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="overflow-hidden">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-primary/10 flex items-center justify-center rounded-full">
+                <Building className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground truncate">Orders</p>
+                <h3 className="text-sm font-bold">{totalOrders}</h3>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-green-500/10 flex items-center justify-center rounded-full">
-              <CircleDollarSign className="h-6 w-6 text-green-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Revenue</p>
-              <h2 className="text-2xl font-bold">${formattedRevenue}</h2>
-              <p className="text-xs text-green-600">↑ 8% from last month</p>
+          
+          <div className="overflow-hidden">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-amber-500/10 flex items-center justify-center rounded-full">
+                <Gauge className="h-4 w-4 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground truncate">In Progress</p>
+                <h3 className="text-sm font-bold">{evaluationsInProgress}</h3>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-blue-500/10 flex items-center justify-center rounded-full">
-              <Users className="h-6 w-6 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Clients</p>
-              <h2 className="text-2xl font-bold">{Math.floor(totalOrders * 0.8)}</h2>
-              <p className="text-xs text-green-600">↑ 5% from last month</p>
+          
+          <div className="overflow-hidden">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-green-500/10 flex items-center justify-center rounded-full">
+                <CircleDollarSign className="h-4 w-4 text-green-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground truncate">Revenue</p>
+                <h3 className="text-sm font-bold">${formattedRevenue}</h3>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          
+          <div className="overflow-hidden">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-500/10 flex items-center justify-center rounded-full">
+                <Users className="h-4 w-4 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground truncate">Clients</p>
+                <h3 className="text-sm font-bold">{Math.floor(totalOrders * 0.8)}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Completion</span>
+            <span className="text-xs">{evaluationCompletionRate}%</span>
+          </div>
+          <Progress value={evaluationCompletionRate} className="h-1 mt-1" />
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

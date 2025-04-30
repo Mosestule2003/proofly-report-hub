@@ -17,59 +17,46 @@ const AdminMetrics: React.FC<AdminMetricsProps> = ({
   completedOrderCount
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardDescription>Total Tenants</CardDescription>
-          <CardTitle className="text-3xl">{tenantCount}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center text-muted-foreground">
-            <Users className="h-4 w-4 mr-1" />
-            <span className="text-sm">Active Users</span>
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">Admin Metrics</CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col items-start">
+            <div className="flex items-center text-muted-foreground mb-1">
+              <Users className="h-4 w-4 mr-1" />
+              <span className="text-xs truncate">Total Tenants</span>
+            </div>
+            <span className="font-bold">{tenantCount}</span>
           </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="pb-2">
-          <CardDescription>Total Orders</CardDescription>
-          <CardTitle className="text-3xl">{orderCount}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center text-muted-foreground">
-            <ClipboardList className="h-4 w-4 mr-1" />
-            <span className="text-sm">All Time</span>
+          
+          <div className="flex flex-col items-start">
+            <div className="flex items-center text-muted-foreground mb-1">
+              <ClipboardList className="h-4 w-4 mr-1" />
+              <span className="text-xs truncate">Total Orders</span>
+            </div>
+            <span className="font-bold">{orderCount}</span>
           </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="pb-2">
-          <CardDescription>Pending Orders</CardDescription>
-          <CardTitle className="text-3xl">{pendingOrderCount}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center text-muted-foreground">
-            <Clock className="h-4 w-4 mr-1" />
-            <span className="text-sm">Awaiting Action</span>
+          
+          <div className="flex flex-col items-start">
+            <div className="flex items-center text-muted-foreground mb-1">
+              <Clock className="h-4 w-4 mr-1" />
+              <span className="text-xs truncate">Pending</span>
+            </div>
+            <span className="font-bold">{pendingOrderCount}</span>
           </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="pb-2">
-          <CardDescription>Completed Orders</CardDescription>
-          <CardTitle className="text-3xl">{completedOrderCount}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center text-muted-foreground">
-            <Building className="h-4 w-4 mr-1" />
-            <span className="text-sm">Evaluations Complete</span>
+          
+          <div className="flex flex-col items-start">
+            <div className="flex items-center text-muted-foreground mb-1">
+              <Building className="h-4 w-4 mr-1" />
+              <span className="text-xs truncate">Completed</span>
+            </div>
+            <span className="font-bold">{completedOrderCount}</span>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
