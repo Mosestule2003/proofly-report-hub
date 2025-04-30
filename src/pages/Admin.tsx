@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -91,37 +90,6 @@ const activityData = [
   }
 ];
 
-// Sample orders data for components that need it
-const sampleOrders = [
-  {
-    id: "ord-1",
-    userId: "user-1",
-    properties: [{ id: "prop-1", address: "123 Main St", city: "San Francisco" }],
-    totalPrice: 149.99,
-    status: "Completed",
-    discount: 0,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "ord-2",
-    userId: "user-2",
-    properties: [{ id: "prop-2", address: "456 Broadway", city: "New York" }],
-    totalPrice: 199.99,
-    status: "In Progress",
-    discount: 10,
-    createdAt: new Date().toISOString()
-  }
-];
-
-// Sample activity items in the correct format
-const formattedActivityItems = activityData.map(item => ({
-  id: item.id,
-  type: 'order',
-  message: `${item.user} ${item.action} ${item.target}`,
-  timestamp: new Date().toISOString(),
-  read: false
-}));
-
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
@@ -131,7 +99,6 @@ const Admin: React.FC = () => {
   const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
     // Check if mobile on mount and whenever window resizes
@@ -153,57 +120,25 @@ const Admin: React.FC = () => {
       })
       .catch(err => {
         console.error("Failed to load admin metrics:", err);
-        // Set default metrics if API fails
-        setMetrics({
-          tenantCount: 0,
-          orderCount: 0,
-          pendingOrderCount: 0,
-          completedOrderCount: 0
-        });
       });
     
-    // Load orders for the pending orders widget and other components
+    // Load orders for the pending orders widget
     api.getOrders()
-      .then(apiOrders => {
-        // Store all orders for components that need them
-        setOrders(apiOrders);
-        
-        // Filter pending orders
-        const pending = apiOrders.filter((order: any) => order.status === 'Pending')
-          .map((order: any) => ({
-            id: order.id,
-            tenantName: order.userName || 'Unknown Tenant',
-            propertyAddress: order.properties?.[0]?.address || 'Unknown Address',
-            date: order.createdAt,
-            status: order.status,
-            amount: order.totalPrice
-          }));
-        
+      .then(orders => {
+        const pending = orders.filter(order => order.status === 'Pending');
         setPendingOrders(pending);
       })
       .catch(err => {
         console.error("Failed to load orders:", err);
-        setPendingOrders([]);
-        setOrders(sampleOrders);
       });
     
     // Load evaluators for the assignment widget
     api.getAllEvaluators()
       .then(data => {
-        const formattedEvaluators = data.map((evaluator: any) => ({
-          id: evaluator.id,
-          name: evaluator.name,
-          rating: evaluator.rating || 4.5,
-          completedEvaluations: evaluator.evaluationsCompleted || 0,
-          availability: evaluator.status === 'Available' ? 'Available' : 'Busy',
-          specialization: evaluator.specialty || 'General'
-        }));
-        
-        setEvaluators(formattedEvaluators);
+        setEvaluators(data);
       })
       .catch(err => {
         console.error("Failed to load evaluators:", err);
-        setEvaluators([]);
       });
     
     // Load sales data for charts
@@ -213,7 +148,6 @@ const Admin: React.FC = () => {
       })
       .catch(err => {
         console.error("Failed to load sales data:", err);
-        setSalesData([]);
       });
       
     // Load transaction data for LastTransactions component
@@ -223,7 +157,6 @@ const Admin: React.FC = () => {
       })
       .catch(err => {
         console.error("Failed to load transactions:", err);
-        setTransactions([]);
       });
     
     // Subscribe to admin updates
@@ -232,17 +165,8 @@ const Admin: React.FC = () => {
       if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED') {
         // Refresh orders when there's an update
         api.getOrders()
-          .then(apiOrders => {
-            setOrders(apiOrders);
-            const pending = apiOrders.filter((order: any) => order.status === 'Pending')
-              .map((order: any) => ({
-                id: order.id,
-                tenantName: order.userName || 'Unknown Tenant',
-                propertyAddress: order.properties?.[0]?.address || 'Unknown Address',
-                date: order.createdAt,
-                status: order.status,
-                amount: order.totalPrice
-              }));
+          .then(orders => {
+            const pending = orders.filter(order => order.status === 'Pending');
             setPendingOrders(pending);
           })
           .catch(err => {
@@ -266,16 +190,7 @@ const Admin: React.FC = () => {
       await api.updateOrderStatus(orderId, newStatus);
       // Refresh pending orders
       const allOrders = await api.getOrders();
-      setOrders(allOrders);
-      const pending = allOrders.filter((order: any) => order.status === 'Pending')
-        .map((order: any) => ({
-          id: order.id,
-          tenantName: order.userName || 'Unknown Tenant',
-          propertyAddress: order.properties?.[0]?.address || 'Unknown Address',
-          date: order.createdAt,
-          status: order.status,
-          amount: order.totalPrice
-        }));
+      const pending = allOrders.filter(order => order.status === 'Pending');
       setPendingOrders(pending);
     } catch (err) {
       console.error("Failed to update order status:", err);
@@ -285,13 +200,18 @@ const Admin: React.FC = () => {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar for desktop and slide-over for mobile */}
-      <AdminSidebar />
+      <AdminSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isMobile={isMobile}
+      />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminTopBar 
           searchTerm="" 
           setSearchTerm={() => {}} 
+          onOpenSidebar={() => setSidebarOpen(true)} 
         />
 
         {/* Scrollable main content */}
@@ -318,12 +238,7 @@ const Admin: React.FC = () => {
                 )}
                 
                 {/* Condensed stats */}
-                <EnhancedDashboardStats 
-                  totalOrders={orders?.length || 0}
-                  evaluationsInProgress={orders?.filter((o: any) => o.status === 'In Progress')?.length || 0}
-                  totalRevenue={orders?.reduce((acc: number, order: any) => acc + (order.totalPrice || 0), 0) || 0}
-                  evaluationCompletionRate={orders?.length ? (orders.filter((o: any) => o.status === 'Completed').length / orders.length) * 100 : 0}
-                />
+                <EnhancedDashboardStats />
                 
                 {/* Transactions */}
                 <LastTransactions transactions={transactions} />
@@ -335,24 +250,17 @@ const Admin: React.FC = () => {
               {/* Second column: 2/3 width on large screens */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Key metrics cards */}
-                <KeyMetricsCards orders={orders || []} />
+                <KeyMetricsCards />
                 
                 {/* Charts */}
-                <SalesChart />
+                <SalesChart data={salesData} />
                 
                 {/* Activity cards */}
-                <ActivityCards completedOrders={orders?.filter((o: any) => o.status === 'Completed').map((order: any) => ({
-                  id: order.id,
-                  status: order.status,
-                  rating: order.rating,
-                  tenantName: order.userName,
-                  userId: order.userId,
-                  date: order.createdAt
-                })) || []} />
+                <ActivityCards />
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Recent activity feed */}
-                  <RecentActivityFeed activities={formattedActivityItems} className="h-full" />
+                  <RecentActivityFeed activities={activityData} className="h-full" />
                   
                   {/* Property heatmap */}
                   <PropertyHeatmap className="h-full" />
@@ -361,7 +269,7 @@ const Admin: React.FC = () => {
                 {/* Pending orders with evaluator assignment */}
                 <PendingOrders 
                   pendingOrders={pendingOrders} 
-                  evaluators={evaluators as any[]}
+                  evaluators={evaluators}
                   onUpdateStatus={handleUpdateOrderStatus}
                 />
                 
