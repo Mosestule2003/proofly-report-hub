@@ -1,8 +1,6 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { MapPin, ShoppingCart, Phone, Calendar, CheckCircle, Clock, User, Route, FileText, Mail, Loader2 } from 'lucide-react';
@@ -397,7 +395,6 @@ const ReportDeliverySimulation: React.FC<{status: string}> = ({ status }) => {
 
 const ProoflyRoadmap = () => {
   const [activeStep, setActiveStep] = useState(0);
-  const [view, setView] = useState<'linear' | 'cards'>('linear');
 
   const steps = [
     {
@@ -448,86 +445,62 @@ const ProoflyRoadmap = () => {
         <p className="text-center text-muted-foreground mt-2">
           From property submission to evaluation report delivery
         </p>
-        
-        <Tabs defaultValue="linear" className="mt-6" onValueChange={(val) => setView(val as 'linear' | 'cards')}>
-          <TabsList className="grid grid-cols-2 w-[400px] mx-auto">
-            <TabsTrigger value="linear">Linear View</TabsTrigger>
-            <TabsTrigger value="cards">Card View</TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
       
       <div className="p-6 space-y-6">
-        {view === 'linear' && (
-          <div className="space-y-8">
-            {steps.map((step, index) => (
-              <RoadmapStep 
-                key={index}
-                icon={step.icon}
-                title={step.title}
-                description={step.description}
-                status={step.status as 'completed' | 'active' | 'pending'}
-                index={index}
-              />
-            ))}
-          </div>
-        )}
-        
-        {view === 'cards' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {steps.map((step, index) => (
-              <Card 
-                key={index}
-                className={cn(
-                  "border transition-colors",
-                  step.status === 'active' ? "border-primary bg-primary/5" : 
-                  step.status === 'completed' ? "border-green-500" : ""
-                )}
-              >
-                <CardContent className="p-4 space-y-4">
-                  <div className="flex gap-3 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {steps.map((step, index) => (
+            <Card 
+              key={index}
+              className={cn(
+                "border transition-colors",
+                step.status === 'active' ? "border-primary bg-primary/5" : 
+                step.status === 'completed' ? "border-green-500" : ""
+              )}
+            >
+              <CardContent className="p-4 space-y-4">
+                <div className="flex gap-3 items-center">
+                  <div className={cn(
+                    "rounded-full p-2 w-10 h-10 flex items-center justify-center",
+                    step.status === 'completed' ? "bg-green-500 text-white" : 
+                    step.status === 'active' ? "bg-primary text-white" : 
+                    "bg-muted text-muted-foreground"
+                  )}>
+                    {step.status === 'active' ? 
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                      >
+                        {step.icon}
+                      </motion.div> : 
+                      step.icon
+                    }
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{step.title}</h3>
                     <div className={cn(
-                      "rounded-full p-2 w-10 h-10 flex items-center justify-center",
-                      step.status === 'completed' ? "bg-green-500 text-white" : 
-                      step.status === 'active' ? "bg-primary text-white" : 
+                      "text-xs px-2 py-0.5 rounded-full inline-block",
+                      step.status === 'completed' ? "bg-green-100 text-green-800" : 
+                      step.status === 'active' ? "bg-primary/20 text-primary" : 
                       "bg-muted text-muted-foreground"
                     )}>
-                      {step.status === 'active' ? 
-                        <motion.div
-                          animate={{ scale: [1, 1.1, 1] }}
-                          transition={{ repeat: Infinity, duration: 1.5 }}
-                        >
-                          {step.icon}
-                        </motion.div> : 
-                        step.icon
-                      }
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{step.title}</h3>
-                      <div className={cn(
-                        "text-xs px-2 py-0.5 rounded-full inline-block",
-                        step.status === 'completed' ? "bg-green-100 text-green-800" : 
-                        step.status === 'active' ? "bg-primary/20 text-primary" : 
-                        "bg-muted text-muted-foreground"
-                      )}>
-                        {step.status === 'completed' ? "Completed" : 
-                         step.status === 'active' ? "In Progress" : "Pending"}
-                      </div>
+                      {step.status === 'completed' ? "Completed" : 
+                       step.status === 'active' ? "In Progress" : "Pending"}
                     </div>
                   </div>
-                  
-                  <p className="text-sm text-muted-foreground">{step.description}</p>
-                  
-                  {index === 0 && step.status === 'active' && <PropertyInputSimulation status={step.status} />}
-                  {index === 1 && step.status === 'active' && <AIOutreachSimulation status={step.status} />}
-                  {index === 2 && step.status === 'active' && <EvaluatorMatchingSimulation status={step.status} />}
-                  {index === 3 && step.status === 'active' && <EvaluationTrackingSimulation status={step.status} />}
-                  {index === 4 && step.status === 'active' && <ReportDeliverySimulation status={step.status} />}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                </div>
+                
+                <p className="text-sm text-muted-foreground">{step.description}</p>
+                
+                {index === 0 && step.status === 'active' && <PropertyInputSimulation status={step.status} />}
+                {index === 1 && step.status === 'active' && <AIOutreachSimulation status={step.status} />}
+                {index === 2 && step.status === 'active' && <EvaluatorMatchingSimulation status={step.status} />}
+                {index === 3 && step.status === 'active' && <EvaluationTrackingSimulation status={step.status} />}
+                {index === 4 && step.status === 'active' && <ReportDeliverySimulation status={step.status} />}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
         
         <div className="flex justify-center mt-8">
           <Button onClick={handleNextStep} size="lg" className="gap-2">
