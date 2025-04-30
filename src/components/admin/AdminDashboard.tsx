@@ -16,12 +16,19 @@ import AIOutreachStats from '@/components/admin/AIOutreachStats';
 import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
 import LastTransactions from '@/components/admin/LastTransactions';
 import { Evaluator as EvaluatorProfile } from '@/components/EvaluatorProfile';
+import { 
+  AdminMetricsType,
+  Order,
+  Transaction, 
+  ActivityItem 
+} from '@/components/admin/types';
+import { AdminEvaluator } from '@/hooks/useAdminDashboard';
 
 interface AdminDashboardProps {
   metrics: AdminMetricsType | null;
   pendingOrders: Order[];
   completedOrders: Order[];
-  evaluators: EvaluatorProfile[];
+  evaluators: AdminEvaluator[];
   transactions: Transaction[];
   activityItems: ActivityItem[];
   handleUpdateOrderStatus: (orderId: string, newStatus: 'Evaluator Assigned' | 'In Progress') => Promise<void>;
@@ -114,7 +121,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {/* Pending orders with evaluator assignment */}
                 <PendingOrders 
                   pendingOrders={pendingOrders} 
-                  evaluators={evaluators}
+                  evaluators={evaluators as unknown as EvaluatorProfile[]}
                   onUpdateStatus={handleUpdateOrderStatus}
                 />
                 

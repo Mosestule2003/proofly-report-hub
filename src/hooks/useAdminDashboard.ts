@@ -1,52 +1,18 @@
 
 import { useState, useEffect } from 'react';
-import { api } from '@/services/api';
-import { ActivityItem } from '@/components/admin/types';
+import { api, OrderStatus } from '@/services/api';
+import { 
+  ActivityItem, 
+  AdminMetricsType, 
+  Order, 
+  Transaction 
+} from '@/components/admin/types';
+import { Evaluator } from '@/components/EvaluatorProfile';
 import { convertToActivityItems } from '@/utils/adminHelpers';
-
-export interface AdminMetricsType {
-  tenantCount: number;
-  orderCount: number;
-  pendingOrderCount: number;
-  completedOrderCount: number;
-}
-
-export interface Evaluator {
-  id: string;
-  name: string;
-  rating: number;
-  evaluationsCompleted: number;
-  bio: string;
-  avatarUrl?: string;
-}
 
 export interface AdminEvaluator extends Evaluator {
   availability: 'Available' | 'Busy';
   specialization: string;
-}
-
-export interface Transaction {
-  id: string;
-  amount: number;
-  status: 'completed' | 'pending' | 'failed';
-  description: string;
-  date: string;
-}
-
-export interface Order {
-  id: string;
-  tenantName: string;
-  propertyAddress: string;
-  date: string;
-  status: string;
-  amount: number;
-  rating?: number;
-  userId: string;
-  properties: any[];
-  totalPrice: number;
-  discount: number;
-  createdAt: string;
-  evaluator?: Evaluator;
 }
 
 export const useAdminDashboard = () => {
@@ -86,12 +52,12 @@ export const useAdminDashboard = () => {
     api.getOrders()
       .then(orders => {
         const pending = orders.filter(order => order.status === 'Pending');
-        setPendingOrders(pending as Order[]);
+        setPendingOrders(pending as unknown as Order[]);
         
         // Also set completed orders for ActivityCards
         const completed = orders.filter(order => 
-          order.status === 'Completed' || order.status === 'Report Ready');
-        setCompletedOrders(completed as Order[]);
+          order.status === 'Report Ready');
+        setCompletedOrders(completed as unknown as Order[]);
       })
       .catch(err => {
         console.error("Failed to load orders:", err);
@@ -99,8 +65,12 @@ export const useAdminDashboard = () => {
     
     // Load sample activity data
     import('@/utils/demoActivityData').then(module => {
-      const activityData = module.default;
-      setActivityItems(convertToActivityItems(activityData));
+      if (module.generateDemoActivities) {
+        const activityData = module.generateDemoActivities();
+        setActivityItems(activityData);
+      } else {
+        console.error("Failed to load activity data: generateDemoActivities function not found");
+      }
     }).catch(err => {
       console.error("Failed to load activity data:", err);
     });
@@ -139,7 +109,7 @@ export const useAdminDashboard = () => {
     // Load transaction data for LastTransactions component
     api.getTransactions()
       .then(data => {
-        setTransactions(data);
+        setTransactions(data as unknown as Transaction[]);
       })
       .catch(err => {
         console.error("Failed to load transactions:", err);
@@ -153,7 +123,7 @@ export const useAdminDashboard = () => {
         api.getOrders()
           .then(orders => {
             const pending = orders.filter(order => order.status === 'Pending');
-            setPendingOrders(pending as Order[]);
+            setPendingOrders(pending as unknown as Order[]);
           })
           .catch(err => {
             console.error("Failed to refresh orders:", err);
@@ -177,7 +147,7 @@ export const useAdminDashboard = () => {
       // Refresh pending orders
       const allOrders = await api.getOrders();
       const pending = allOrders.filter(order => order.status === 'Pending');
-      setPendingOrders(pending as Order[]);
+      setPendingOrders(pending as unknown as Order[]);
     } catch (err) {
       console.error("Failed to update order status:", err);
     }
