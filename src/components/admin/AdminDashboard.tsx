@@ -1,7 +1,8 @@
 
 import React from 'react';
-import AdminSidebarWithProps from '@/components/admin/AdminSidebarWithProps';
-import AdminTopBarWithTrigger from '@/components/admin/AdminTopBarWithTrigger';
+import { useNavigate } from 'react-router-dom';
+import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdminTopBar from '@/components/admin/AdminTopBar';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AdminMetrics from '@/components/AdminMetrics';
 import EnhancedDashboardStats from '@/components/admin/EnhancedDashboardStats';
@@ -14,37 +15,43 @@ import KeyMetricsCards from '@/components/admin/KeyMetricsCards';
 import AIOutreachStats from '@/components/admin/AIOutreachStats';
 import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
 import LastTransactions from '@/components/admin/LastTransactions';
-import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import { Evaluator as EvaluatorProfile } from '@/components/EvaluatorProfile';
 
-const Admin: React.FC = () => {
-  const {
-    isMobile,
-    sidebarOpen,
-    setSidebarOpen,
-    metrics,
-    pendingOrders,
-    evaluators,
-    transactions,
-    completedOrders,
-    activityItems,
-    handleUpdateOrderStatus
-  } = useAdminDashboard();
+interface AdminDashboardProps {
+  metrics: AdminMetricsType | null;
+  pendingOrders: Order[];
+  completedOrders: Order[];
+  evaluators: EvaluatorProfile[];
+  transactions: Transaction[];
+  activityItems: ActivityItem[];
+  handleUpdateOrderStatus: (orderId: string, newStatus: 'Evaluator Assigned' | 'In Progress') => Promise<void>;
+  isMobile: boolean;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}
 
+const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  metrics,
+  pendingOrders,
+  completedOrders,
+  evaluators,
+  transactions,
+  activityItems,
+  handleUpdateOrderStatus,
+  isMobile,
+  sidebarOpen,
+  setSidebarOpen
+}) => {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar for desktop and slide-over for mobile */}
-      <AdminSidebarWithProps
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        isMobile={isMobile}
-      />
+      <AdminSidebar />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminTopBarWithTrigger 
+        <AdminTopBar 
           searchTerm="" 
           setSearchTerm={() => {}} 
-          onOpenSidebar={() => setSidebarOpen(true)}
         />
 
         {/* Scrollable main content */}
@@ -122,4 +129,4 @@ const Admin: React.FC = () => {
   );
 };
 
-export default Admin;
+export default AdminDashboard;
