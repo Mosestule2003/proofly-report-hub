@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -16,16 +15,12 @@ import AIOutreachStats from '@/components/admin/AIOutreachStats';
 import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
 import CostBreakdown from '@/components/admin/CostBreakdown';
 import { api } from '@/services/api';
-import { Evaluator as EvaluatorProfile } from '@/components/EvaluatorProfile';
+import { Evaluator } from '@/components/EvaluatorProfile';
 import { ActivityItem } from '@/components/admin/RecentActivityFeed';
 import { generateDemoActivities } from '@/utils/demoActivityData';
 import { Order, OrderStatus } from '@/services/api';
 
-// Extended evaluator for internal admin use
-interface AdminEvaluator extends Omit<EvaluatorProfile, 'evaluationsCompleted'> {
-  evaluationsCompleted?: number;
-}
-
+// Adjusted interface to be compatible with Evaluator
 interface AdminMetricsType {
   tenantCount: number;
   orderCount: number;
@@ -47,7 +42,7 @@ const Admin: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [metrics, setMetrics] = useState<AdminMetricsType | null>(null);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-  const [evaluators, setEvaluators] = useState<AdminEvaluator[]>([]);
+  const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);

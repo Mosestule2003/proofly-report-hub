@@ -12,7 +12,7 @@ export type User = {
   createdAt?: string;
 };
 
-// Define local mockUsers to avoid circular dependency
+// Define local users array to avoid circular dependency
 // We'll sync this with the AuthContext's mockUsers when needed
 let users: User[] = [
   { id: '1', email: 'tenant@example.com', name: 'Demo Tenant', role: 'tenant', createdAt: new Date().toISOString() },
@@ -596,7 +596,7 @@ export const api = {
     await new Promise(r => setTimeout(r, 800));
     
     return {
-      tenantCount: mockUsers.filter(u => u.role === 'tenant').length,
+      tenantCount: users.filter(u => u.role === 'tenant').length,
       orderCount: orders.length,
       pendingOrderCount: orders.filter(o => o.status !== 'Report Ready').length,
       completedOrderCount: orders.filter(o => o.status === 'Report Ready').length,
@@ -931,7 +931,7 @@ export const api = {
     ];
     
     // Find tenant ID or use default
-    const tenantId = mockUsers.find(u => u.role === 'tenant')?.id || '1';
+    const tenantId = users.find(u => u.role === 'tenant')?.id || '1';
     
     // Add completed order with report
     const order1: Order = {
@@ -1028,7 +1028,7 @@ export const api = {
       notifyWebSocketListeners('sales', { type: 'SALES_UPDATED', sales: salesData });
       
       // Notify user listeners
-      notifyWebSocketListeners('users', { type: 'USERS_UPDATED', users: mockUsers });
+      notifyWebSocketListeners('users', { type: 'USERS_UPDATED', users });
     }
     
     console.log('Mock data initialized for', currentUser.role);

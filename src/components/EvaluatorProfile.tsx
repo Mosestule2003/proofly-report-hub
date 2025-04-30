@@ -10,6 +10,10 @@ export interface Evaluator {
   rating: number;
   evaluationsCompleted: number;
   bio: string;
+  // Add extra fields that might be used in other components
+  avatar?: string; // For compatibility with OrderProcessingModal
+  properties?: number; // For compatibility with OrderProcessingModal
+  experience?: string; // For compatibility with OrderProcessingModal
 }
 
 // This component displays an evaluator's profile card
