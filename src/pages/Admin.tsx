@@ -25,7 +25,6 @@ interface Evaluator {
   completedEvaluations: number;
   availability: 'Available' | 'Busy';
   specialization: string;
-  avatarUrl?: string;
 }
 
 interface Order {
@@ -36,17 +35,6 @@ interface Order {
   status: string;
   amount: number;
   rating?: number;
-  userId: string;
-  properties: Array<{ id: string; address: string; city: string; description?: string }>;
-  totalPrice: number;
-  discount: number;
-  createdAt: string;
-  agentContact?: {
-    name: string;
-    email: string;
-    phone: string;
-    company?: string;
-  };
 }
 
 interface AdminMetricsType {
@@ -64,18 +52,7 @@ interface Transaction {
   date: string;
 }
 
-// Sample activity data with proper type
-type ActivityType = 'evaluation_complete' | 'outreach_success' | 'booking_confirmed' | 'system_alert';
-
-interface ActivityItem {
-  id: string;
-  type: ActivityType;
-  message: string;
-  timestamp: string;
-  read: boolean;
-}
-
-// Format sample activity data with correct types
+// Sample activity data
 const activityData = [
   {
     id: '1',
@@ -136,10 +113,10 @@ const sampleOrders = [
   }
 ];
 
-// Sample activity items properly typed
-const formattedActivityItems: ActivityItem[] = activityData.map(item => ({
+// Sample activity items in the correct format
+const formattedActivityItems = activityData.map(item => ({
   id: item.id,
-  type: 'evaluation_complete' as ActivityType,
+  type: 'order',
   message: `${item.user} ${item.action} ${item.target}`,
   timestamp: new Date().toISOString(),
   read: false
@@ -154,7 +131,7 @@ const Admin: React.FC = () => {
   const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
     // Check if mobile on mount and whenever window resizes
@@ -189,7 +166,7 @@ const Admin: React.FC = () => {
     api.getOrders()
       .then(apiOrders => {
         // Store all orders for components that need them
-        setOrders(apiOrders as Order[]);
+        setOrders(apiOrders);
         
         // Filter pending orders
         const pending = apiOrders.filter((order: any) => order.status === 'Pending')
@@ -199,13 +176,7 @@ const Admin: React.FC = () => {
             propertyAddress: order.properties?.[0]?.address || 'Unknown Address',
             date: order.createdAt,
             status: order.status,
-            amount: order.totalPrice,
-            userId: order.userId,
-            properties: order.properties || [],
-            totalPrice: order.totalPrice || 0,
-            discount: order.discount || 0,
-            createdAt: order.createdAt,
-            agentContact: order.agentContact
+            amount: order.totalPrice
           }));
         
         setPendingOrders(pending);
@@ -213,18 +184,18 @@ const Admin: React.FC = () => {
       .catch(err => {
         console.error("Failed to load orders:", err);
         setPendingOrders([]);
-        setOrders(sampleOrders as Order[]);
+        setOrders(sampleOrders);
       });
     
     // Load evaluators for the assignment widget
     api.getAllEvaluators()
       .then(data => {
-        const formattedEvaluators: Evaluator[] = data.map((evaluator: any) => ({
+        const formattedEvaluators = data.map((evaluator: any) => ({
           id: evaluator.id,
           name: evaluator.name,
           rating: evaluator.rating || 4.5,
           completedEvaluations: evaluator.evaluationsCompleted || 0,
-          availability: evaluator.status === 'Available' ? 'Available' : 'Busy' as 'Available' | 'Busy',
+          availability: evaluator.status === 'Available' ? 'Available' : 'Busy',
           specialization: evaluator.specialty || 'General'
         }));
         
@@ -262,7 +233,7 @@ const Admin: React.FC = () => {
         // Refresh orders when there's an update
         api.getOrders()
           .then(apiOrders => {
-            setOrders(apiOrders as Order[]);
+            setOrders(apiOrders);
             const pending = apiOrders.filter((order: any) => order.status === 'Pending')
               .map((order: any) => ({
                 id: order.id,
@@ -270,13 +241,7 @@ const Admin: React.FC = () => {
                 propertyAddress: order.properties?.[0]?.address || 'Unknown Address',
                 date: order.createdAt,
                 status: order.status,
-                amount: order.totalPrice,
-                userId: order.userId,
-                properties: order.properties || [],
-                totalPrice: order.totalPrice || 0,
-                discount: order.discount || 0,
-                createdAt: order.createdAt,
-                agentContact: order.agentContact
+                amount: order.totalPrice
               }));
             setPendingOrders(pending);
           })
@@ -301,7 +266,7 @@ const Admin: React.FC = () => {
       await api.updateOrderStatus(orderId, newStatus);
       // Refresh pending orders
       const allOrders = await api.getOrders();
-      setOrders(allOrders as Order[]);
+      setOrders(allOrders);
       const pending = allOrders.filter((order: any) => order.status === 'Pending')
         .map((order: any) => ({
           id: order.id,
@@ -309,13 +274,7 @@ const Admin: React.FC = () => {
           propertyAddress: order.properties?.[0]?.address || 'Unknown Address',
           date: order.createdAt,
           status: order.status,
-          amount: order.totalPrice,
-          userId: order.userId,
-          properties: order.properties || [],
-          totalPrice: order.totalPrice || 0,
-          discount: order.discount || 0,
-          createdAt: order.createdAt,
-          agentContact: order.agentContact
+          amount: order.totalPrice
         }));
       setPendingOrders(pending);
     } catch (err) {
@@ -344,61 +303,54 @@ const Admin: React.FC = () => {
               setSearchTerm={() => {}}
             />
 
-            {/* Better organized dashboard grid with improved spacing */}
-            <div className="grid gap-6 mt-6">
-              {/* Admin metrics section */}
-              {metrics && (
-                <AdminMetrics 
-                  tenantCount={metrics.tenantCount} 
-                  orderCount={metrics.orderCount}
-                  pendingOrderCount={metrics.pendingOrderCount}
-                  completedOrderCount={metrics.completedOrderCount}
+            {/* Main dashboard grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+              {/* First column: 1/3 width on large screens */}
+              <div className="lg:col-span-1 space-y-6">
+                {/* Admin metrics */}
+                {metrics && (
+                  <AdminMetrics 
+                    tenantCount={metrics.tenantCount} 
+                    orderCount={metrics.orderCount}
+                    pendingOrderCount={metrics.pendingOrderCount}
+                    completedOrderCount={metrics.completedOrderCount}
+                  />
+                )}
+                
+                {/* Condensed stats */}
+                <EnhancedDashboardStats 
+                  totalOrders={orders?.length || 0}
+                  evaluationsInProgress={orders?.filter((o: any) => o.status === 'In Progress')?.length || 0}
+                  totalRevenue={orders?.reduce((acc: number, order: any) => acc + (order.totalPrice || 0), 0) || 0}
+                  evaluationCompletionRate={orders?.length ? (orders.filter((o: any) => o.status === 'Completed').length / orders.length) * 100 : 0}
                 />
-              )}
+                
+                {/* Transactions */}
+                <LastTransactions transactions={transactions} />
+                
+                {/* AI Outreach Stats */}
+                <AIOutreachStats />
+              </div>
               
-              {/* Condensed stats with even spacing */}
-              <EnhancedDashboardStats 
-                totalOrders={orders?.length || 0}
-                evaluationsInProgress={orders?.filter((o: Order) => o.status === 'In Progress')?.length || 0}
-                totalRevenue={orders?.reduce((acc: number, order: Order) => acc + (order.totalPrice || 0), 0) || 0}
-                evaluationCompletionRate={orders?.length ? (orders.filter((o: Order) => o.status === 'Completed').length / orders.length) * 100 : 0}
-              />
-              
-              {/* Key metrics cards */}
-              <KeyMetricsCards orders={orders || []} />
-              
-              {/* Two column layout for charts and activity */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Second column: 2/3 width on large screens */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Key metrics cards */}
+                <KeyMetricsCards orders={orders || []} />
+                
                 {/* Charts */}
                 <SalesChart />
                 
                 {/* Activity cards */}
                 <ActivityCards completedOrders={orders?.filter((o: any) => o.status === 'Completed') || []} />
-              </div>
-              
-              {/* Three column layout for smaller widgets */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Transactions */}
-                <div className="md:col-span-1">
-                  <LastTransactions transactions={transactions} />
-                </div>
                 
-                {/* AI Outreach Stats */}
-                <div className="md:col-span-1">
-                  <AIOutreachStats />
-                </div>
-                
-                {/* Recent activity feed */}
-                <div className="md:col-span-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Recent activity feed */}
                   <RecentActivityFeed activities={formattedActivityItems} className="h-full" />
+                  
+                  {/* Property heatmap */}
+                  <PropertyHeatmap className="h-full" />
                 </div>
-              </div>
-              
-              {/* Property heatmap full width */}
-              <PropertyHeatmap className="w-full" />
-              
-              {/* Pending section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
                 {/* Pending orders with evaluator assignment */}
                 <PendingOrders 
                   pendingOrders={pendingOrders} 

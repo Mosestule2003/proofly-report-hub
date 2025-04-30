@@ -24,10 +24,10 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [] }) => {
     acc + (order.totalPrice || 0), 0);
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card className="h-full">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-between h-full">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-primary/10 flex items-center justify-center rounded-full">
                 <Building className="h-5 w-5 text-primary" />
@@ -48,9 +48,9 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [] }) => {
         </CardContent>
       </Card>
       
-      <Card className="h-full">
+      <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-between h-full">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-primary/10 flex items-center justify-center rounded-full">
                 <BarChart3 className="h-5 w-5 text-primary" />
@@ -71,9 +71,9 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [] }) => {
         </CardContent>
       </Card>
       
-      <Card className="h-full">
+      <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-between h-full">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-primary/10 flex items-center justify-center rounded-full">
                 <CircleDollarSign className="h-5 w-5 text-primary" />

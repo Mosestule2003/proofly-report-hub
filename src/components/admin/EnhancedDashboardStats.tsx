@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building, CircleDollarSign, Users, Gauge } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
@@ -19,15 +19,10 @@ const EnhancedDashboardStats: React.FC<EnhancedDashboardStatsProps> = ({
   evaluationCompletionRate = 0,
   className = ''
 }) => {
-  // Format currency with fallback for undefined values
-  const formatCurrency = (value: number) => {
-    return value ? value.toLocaleString() : '0';
-  };
-
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ${className}`}>
-      <Card className="h-full">
-        <CardContent className="p-6 h-full flex items-center">
+    <div className={`grid grid-cols-1 md:grid-cols-4 gap-4 ${className}`}>
+      <Card>
+        <CardContent className="p-6">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-full">
               <Building className="h-6 w-6 text-primary" />
@@ -41,8 +36,8 @@ const EnhancedDashboardStats: React.FC<EnhancedDashboardStatsProps> = ({
         </CardContent>
       </Card>
       
-      <Card className="h-full">
-        <CardContent className="p-6 h-full flex items-center">
+      <Card>
+        <CardContent className="p-6">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-amber-500/10 flex items-center justify-center rounded-full">
               <Gauge className="h-6 w-6 text-amber-500" />
@@ -56,23 +51,23 @@ const EnhancedDashboardStats: React.FC<EnhancedDashboardStatsProps> = ({
         </CardContent>
       </Card>
       
-      <Card className="h-full">
-        <CardContent className="p-6 h-full flex items-center">
+      <Card>
+        <CardContent className="p-6">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-green-500/10 flex items-center justify-center rounded-full">
               <CircleDollarSign className="h-6 w-6 text-green-500" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Revenue</p>
-              <h2 className="text-2xl font-bold">${formatCurrency(totalRevenue)}</h2>
+              <h2 className="text-2xl font-bold">${totalRevenue.toLocaleString()}</h2>
               <p className="text-xs text-green-600">↑ 8% from last month</p>
             </div>
           </div>
         </CardContent>
       </Card>
       
-      <Card className="h-full">
-        <CardContent className="p-6 h-full flex items-center">
+      <Card>
+        <CardContent className="p-6">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-blue-500/10 flex items-center justify-center rounded-full">
               <Users className="h-6 w-6 text-blue-500" />
