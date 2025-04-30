@@ -12,10 +12,13 @@ const ActivitySection: React.FC<ActivitySectionProps> = ({ activityItems }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
       {/* Recent activity feed */}
-      <RecentActivityFeed activities={activityItems} className="h-full" />
+      <RecentActivityFeed 
+        activities={activityItems} 
+        className="shadow-sm hover:shadow transition-shadow h-full" 
+      />
       
       {/* Property heatmap */}
-      <PropertyHeatmap className="h-full" />
+      <PropertyHeatmap className="shadow-sm hover:shadow transition-shadow h-full" />
     </div>
   );
 };

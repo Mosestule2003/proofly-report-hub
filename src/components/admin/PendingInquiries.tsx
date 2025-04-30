@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
 // Sample inquiry data structure
 interface Inquiry {
@@ -12,6 +13,10 @@ interface Inquiry {
   inquiryText: string;
   date: string;
   assigned?: string;
+}
+
+interface PendingInquiriesProps {
+  className?: string;
 }
 
 const sampleInquiries: Inquiry[] = [
@@ -47,9 +52,9 @@ const sampleInquiries: Inquiry[] = [
   }
 ];
 
-const PendingInquiries = () => {
+const PendingInquiries: React.FC<PendingInquiriesProps> = ({ className }) => {
   return (
-    <Card>
+    <Card className={cn('', className)}>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Pending Inquiries</CardTitle>
         <Button variant="outline" size="sm">View All</Button>

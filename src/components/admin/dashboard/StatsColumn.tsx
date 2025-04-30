@@ -21,6 +21,7 @@ const StatsColumn: React.FC<StatsColumnProps> = ({ metrics, transactions }) => {
           orderCount={metrics.orderCount}
           pendingOrderCount={metrics.pendingOrderCount}
           completedOrderCount={metrics.completedOrderCount}
+          className="shadow-sm hover:shadow transition-shadow"
         />
       )}
       
@@ -30,13 +31,19 @@ const StatsColumn: React.FC<StatsColumnProps> = ({ metrics, transactions }) => {
         evaluationsInProgress={metrics?.pendingOrderCount || 0}
         totalRevenue={75000}
         evaluationCompletionRate={65}
+        className="shadow-sm hover:shadow transition-shadow"
       />
       
       {/* Transactions */}
-      <LastTransactions transactions={transactions} />
+      <LastTransactions 
+        transactions={transactions} 
+        className="shadow-sm hover:shadow transition-shadow"
+      />
       
       {/* AI Outreach Stats */}
-      <AIOutreachStats />
+      <AIOutreachStats 
+        className="shadow-sm hover:shadow transition-shadow"
+      />
     </div>
   );
 };

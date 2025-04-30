@@ -14,7 +14,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   setSearchTerm 
 }) => {
   return (
-    <div className="w-full mb-6">
+    <div className="w-full mb-6 bg-white dark:bg-card rounded-lg shadow-sm p-4">
       <AdminHeader
         userName={userName}
         searchTerm={searchTerm}

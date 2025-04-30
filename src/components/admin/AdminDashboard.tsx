@@ -31,7 +31,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   setSidebarOpen
 }) => {
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col space-y-6">
       <DashboardHeader
         userName="Admin"
         searchTerm=""

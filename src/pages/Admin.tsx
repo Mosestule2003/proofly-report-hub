@@ -38,7 +38,7 @@ const Admin: React.FC = () => {
 
         {/* Scrollable main content */}
         <div className="flex-1 overflow-auto pb-8">
-          <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full">
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-8">
             <AdminDashboard 
               metrics={metrics}
               pendingOrders={pendingOrders}

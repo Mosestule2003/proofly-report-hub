@@ -28,28 +28,37 @@ const ContentColumn: React.FC<ContentColumnProps> = ({
   return (
     <div className="lg:col-span-2 space-y-6 w-full">
       {/* Key metrics cards */}
-      <KeyMetricsCards orders={pendingOrders} />
+      <KeyMetricsCards 
+        orders={pendingOrders} 
+        className="shadow-sm hover:shadow transition-shadow"
+      />
       
       {/* Charts */}
-      <SalesChart />
-      
-      {/* Activity cards */}
-      <ActivityCards completedOrders={completedOrders} />
+      <SalesChart className="shadow-sm hover:shadow transition-shadow" />
       
       {/* Activity section with feed and heatmap */}
       <ActivitySection 
         activityItems={activityItems} 
       />
       
-      {/* Pending orders with evaluator assignment */}
-      <PendingOrders 
-        pendingOrders={pendingOrders} 
-        evaluators={evaluators as unknown as Evaluator[]}
-        onUpdateStatus={handleUpdateOrderStatus}
+      {/* Activity cards - completed orders */}
+      <ActivityCards 
+        completedOrders={completedOrders}
+        className="shadow-sm hover:shadow transition-shadow" 
       />
       
-      {/* Pending inquiries */}
-      <PendingInquiries />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Pending orders with evaluator assignment */}
+        <PendingOrders 
+          pendingOrders={pendingOrders} 
+          evaluators={evaluators as unknown as Evaluator[]}
+          onUpdateStatus={handleUpdateOrderStatus}
+          className="shadow-sm hover:shadow transition-shadow h-full"
+        />
+        
+        {/* Pending inquiries */}
+        <PendingInquiries className="shadow-sm hover:shadow transition-shadow h-full" />
+      </div>
     </div>
   );
 };
