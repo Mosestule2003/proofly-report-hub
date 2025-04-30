@@ -12,13 +12,8 @@ import {
 } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/services/api';
-import { cn } from '@/lib/utils';
 
-interface SalesChartProps {
-  className?: string;
-}
-
-const SalesChart: React.FC<SalesChartProps> = ({ className }) => {
+const SalesChart = () => {
   const [data, setData] = useState<any[]>([]);
   const { user } = useAuth();
   
@@ -53,7 +48,7 @@ const SalesChart: React.FC<SalesChartProps> = ({ className }) => {
   }, [user]);
   
   return (
-    <Card className={cn("col-span-2", className)}>
+    <Card className="col-span-2">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>Report Sales</CardTitle>
         <div className="text-sm text-muted-foreground">

@@ -8,16 +8,7 @@ import { Evaluator } from '@/components/EvaluatorProfile';
 export type User = AuthUser;
 
 export type OrderStatus = 'Pending' | 'Evaluator Assigned' | 'In Progress' | 'Report Ready';
-export type OrderStepStatus = 
-  'PENDING_MATCH' | 
-  'OUTREACH_INITIATED' | 
-  'OUTREACH_SCHEDULING' | 
-  'OUTREACH_SCHEDULED' |
-  'EN_ROUTE' | 
-  'ARRIVED' | 
-  'EVALUATING' | 
-  'COMPLETED' | 
-  'REPORT_READY';
+export type OrderStepStatus = 'PENDING_MATCH' | 'EN_ROUTE' | 'ARRIVED' | 'EVALUATING' | 'COMPLETED' | 'REPORT_READY';
 
 export type Order = {
   id: string;
@@ -67,15 +58,6 @@ const mockSalesData = [
   { name: 'Sat', amount: 180 },
   { name: 'Sun', amount: 120 },
 ];
-
-// Define type for transactions
-export type Transaction = {
-  id: string;
-  amount: number;
-  status: 'completed' | 'pending' | 'failed';
-  date: string;
-  description: string;
-};
 
 // Mock data store
 let orders: Order[] = [];
@@ -296,7 +278,7 @@ export const api = {
     return updatedOrder;
   },
   
-  // Order step simulation - Updated to include outreach steps
+  // Order step simulation
   advanceOrderStep: async (orderId: string): Promise<Order | null> => {
     const orderIndex = orders.findIndex(o => o.id === orderId);
     
@@ -314,7 +296,7 @@ export const api = {
     // Advance the step based on current state
     if (newStep === 'PENDING_MATCH') {
       newStatus = 'Evaluator Assigned';
-      newStep = 'OUTREACH_INITIATED'; // Now we start with outreach instead of en route
+      newStep = 'EN_ROUTE';
       newPropertyIndex = 0;
       
       // Randomly select an evaluator if not already assigned
@@ -329,57 +311,7 @@ export const api = {
           `${randomEvaluator.name} has been assigned to your evaluation request.`
         );
       }
-      
-      // Add notification for outreach
-      addNotification(
-        order.userId,
-        'AI Outreach Initiated',
-        `We're contacting the landlord for ${order.properties[newPropertyIndex].address.split(',')[0]}.`
-      );
-    } 
-    // New outreach steps
-    else if (newStep === 'OUTREACH_INITIATED') {
-      newStep = 'OUTREACH_SCHEDULING';
-      
-      // Add notification for scheduling
-      addNotification(
-        order.userId,
-        'Scheduling in Progress',
-        `Coordinating viewing times for ${order.properties[newPropertyIndex].address.split(',')[0]}.`
-      );
-    } 
-    else if (newStep === 'OUTREACH_SCHEDULING') {
-      newStep = 'OUTREACH_SCHEDULED';
-      
-      // Add notification for scheduled
-      const viewingDate = new Date();
-      viewingDate.setDate(viewingDate.getDate() + 1); // Tomorrow
-      const dateStr = viewingDate.toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric',
-        hour: 'numeric'
-      });
-      
-      addNotification(
-        order.userId,
-        'Viewing Scheduled',
-        `Viewing confirmed for ${order.properties[newPropertyIndex].address.split(',')[0]} on ${dateStr}.`
-      );
-    } 
-    else if (newStep === 'OUTREACH_SCHEDULED') {
-      newStep = 'EN_ROUTE';
-      newStatus = 'In Progress';
-      
-      // Add notification for en route
-      addNotification(
-        order.userId,
-        'Evaluator En Route',
-        `The evaluator is on their way to ${order.properties[newPropertyIndex].address.split(',')[0]}.`
-      );
-    }
-    // Original evaluation steps
-    else if (newStep === 'EN_ROUTE') {
+    } else if (newStep === 'EN_ROUTE') {
       newStep = 'ARRIVED';
       
       // Add notification for user
@@ -389,6 +321,7 @@ export const api = {
         `The evaluator has arrived at ${order.properties[newPropertyIndex].address.split(',')[0]}.`
       );
     } else if (newStep === 'ARRIVED') {
+      newStatus = 'In Progress';
       newStep = 'EVALUATING';
       
       // Add notification for user
@@ -410,13 +343,13 @@ export const api = {
       // Move to the next property or finish
       if (newPropertyIndex < propertyCount - 1) {
         newPropertyIndex++;
-        newStep = 'OUTREACH_INITIATED'; // Start with outreach for the next property
+        newStep = 'EN_ROUTE';
         
         // Add notification for user
         addNotification(
           order.userId,
-          'Starting Next Property',
-          `Beginning outreach for ${order.properties[newPropertyIndex].address.split(',')[0]}.`
+          'Moving to Next Property',
+          `Evaluator is now en route to ${order.properties[newPropertyIndex].address.split(',')[0]}.`
         );
       } else {
         newStep = 'REPORT_READY';
@@ -590,21 +523,6 @@ export const api = {
       pendingOrderCount: orders.filter(o => o.status !== 'Report Ready').length,
       completedOrderCount: orders.filter(o => o.status === 'Report Ready').length,
     };
-  },
-  
-  // Get transactions for LastTransactions component
-  getTransactions: async (): Promise<Transaction[]> => {
-    // Simulate API delay
-    await new Promise(r => setTimeout(r, 600));
-    
-    // Convert orders to transactions
-    return orders.map(order => ({
-      id: order.id,
-      amount: order.totalPrice - order.discount,
-      status: order.status === 'Report Ready' ? 'completed' : 'pending',
-      date: order.createdAt,
-      description: `Property evaluation${order.properties.length > 1 ? 's' : ''} (${order.properties.length} ${order.properties.length > 1 ? 'properties' : 'property'})`
-    }));
   },
   
   // Evaluators

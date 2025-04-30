@@ -9,12 +9,11 @@ import { Order } from '@/services/api';
 
 interface ActivityCardsProps {
   completedOrders: Order[];
-  className?: string; // Added className prop
 }
 
-export const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders, className = '' }) => {
+const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders }) => {
   return (
-    <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${className}`}>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
@@ -135,5 +134,4 @@ export const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders, c
   );
 };
 
-// Also add a default export for backward compatibility if needed
 export default ActivityCards;

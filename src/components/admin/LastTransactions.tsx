@@ -1,88 +1,71 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Calendar, CircleDollarSign, Tag } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { format, isValid } from 'date-fns';
-import { Transaction } from '@/services/api';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { ArrowRight } from 'lucide-react';
+import { Order } from '@/services/api';
 
 interface LastTransactionsProps {
-  className?: string;
-  transactions: Transaction[];
+  transactions: Order[];
+  onViewTransaction: (orderId: string) => void;
 }
 
-const LastTransactions: React.FC<LastTransactionsProps> = ({ className, transactions }) => {
-  const recentTransactions = [...transactions]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
-  
-  // Helper function to safely format dates
-  const safeFormatDate = (dateString: string, formatStr: string) => {
-    const date = new Date(dateString);
-    return isValid(date) ? format(date, formatStr) : 'Invalid date';
+const LastTransactions: React.FC<LastTransactionsProps> = ({ 
+  transactions,
+  onViewTransaction 
+}) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'Evaluator Assigned': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'In Progress': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'Report Ready': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
   };
-    
+  
   return (
-    <Card className={cn('', className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base">Latest Transactions</CardTitle>
-        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+    <Card className="col-span-2">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Last Transactions</CardTitle>
+        <Button variant="outline" size="sm">View All</Button>
       </CardHeader>
       <CardContent>
-        {recentTransactions.length === 0 ? (
-          <p className="text-center text-muted-foreground p-4">No transactions yet</p>
-        ) : (
-          <div className="space-y-3">
-            {recentTransactions.map((transaction) => (
-              <div 
-                key={transaction.id}
-                className="flex items-start rounded-md border p-3"
-              >
-                <div className={`flex h-9 w-9 items-center justify-center rounded-full ${
-                  transaction.status === 'completed' ? 'bg-green-100' : 
-                  transaction.status === 'pending' ? 'bg-amber-100' : 'bg-red-100'
-                }`}>
-                  <CircleDollarSign className={`h-5 w-5 ${
-                    transaction.status === 'completed' ? 'text-green-600' : 
-                    transaction.status === 'pending' ? 'text-amber-600' : 'text-red-600'
-                  }`} />
+        <div className="space-y-4">
+          {transactions.slice(0, 5).map((transaction) => (
+            <div key={transaction.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Order #{transaction.id.substring(0, 8)}</span>
+                  <Badge className={`${getStatusColor(transaction.status)}`}>
+                    {transaction.status}
+                  </Badge>
                 </div>
-                
-                <div className="ml-4 flex flex-1 flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">
-                      ${transaction.amount.toFixed(2)}
-                    </p>
-                    <div className={`rounded-full px-2 py-0.5 text-xs ${
-                      transaction.status === 'completed' ? 'bg-green-100 text-green-600' : 
-                      transaction.status === 'pending' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'
-                    }`}>
-                      {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      {transaction.description}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1 mt-1">
-                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      {safeFormatDate(transaction.date, 'MMM d, yyyy')}
-                    </span>
-                  </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {format(new Date(transaction.createdAt), 'MMM dd, yyyy')} • {transaction.properties.length} properties
                 </div>
               </div>
-            ))}
-            
-            <div className="text-center mt-2">
-              <a href="#" className="text-xs text-primary hover:underline">View all transactions</a>
+              <div className="flex items-center gap-3">
+                <span className="font-semibold">${transaction.totalPrice}</span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => onViewTransaction(transaction.id)}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          ))}
+          
+          {transactions.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No transactions yet</p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

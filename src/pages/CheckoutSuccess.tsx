@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -85,8 +84,7 @@ const CheckoutSuccess: React.FC = () => {
     id: prop.id || crypto.randomUUID(),
     address: prop.address,
     description: prop.description || '',
-    price: prop.price || 30,
-    landlordInfo: prop.landlordInfo // Ensure landlord info is included for outreach
+    price: prop.price || 30
   })) as Property[] || [];
   
   return (
