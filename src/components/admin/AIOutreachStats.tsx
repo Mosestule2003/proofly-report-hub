@@ -5,20 +5,20 @@ import { CircleCheck, Phone, Clock, CalendarCheck } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 interface AIOutreachStatsProps {
-  successRate: number;
-  totalOutreaches: number;
-  scheduledViewings: number;
-  avgResponseTime: string;
+  successRate?: number;
+  totalOutreaches?: number;
+  scheduledViewings?: number;
+  avgResponseTime?: string;
 }
 
-const AIOutreachStats: React.FC<AIOutreachStatsProps> = ({
-  successRate,
-  totalOutreaches,
-  scheduledViewings,
-  avgResponseTime
+export const AIOutreachStats: React.FC<AIOutreachStatsProps> = ({
+  successRate = 78,
+  totalOutreaches = 142,
+  scheduledViewings = 37,
+  avgResponseTime = "2.4m"
 }) => {
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           AI Outreach Performance
@@ -66,5 +66,3 @@ const AIOutreachStats: React.FC<AIOutreachStatsProps> = ({
     </Card>
   );
 };
-
-export default AIOutreachStats;
