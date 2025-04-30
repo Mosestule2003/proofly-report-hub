@@ -4,11 +4,14 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import ReturnToAdminBanner from './ReturnToAdminBanner';
+import { ShoppingCart } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
 
 export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
+  const { properties } = useCart();
   
   // Don't show header on admin pages except for login
   const isAdminPage = location.pathname.startsWith('/admin');
@@ -49,6 +52,21 @@ export function Header() {
           </nav>
           
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/cart')}
+              className="relative"
+              aria-label="Shopping cart"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {properties.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {properties.length}
+                </span>
+              )}
+            </Button>
+            
             {isAuthenticated ? (
               <>
                 <Button 
