@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -14,14 +15,14 @@ import KeyMetricsCards from '@/components/admin/KeyMetricsCards';
 import AIOutreachStats from '@/components/admin/AIOutreachStats';
 import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
 import CostBreakdown from '@/components/admin/CostBreakdown';
-import { api, Order, OrderStatus } from '@/services/api';
+import { api } from '@/services/api';
 import { Evaluator as EvaluatorProfile } from '@/components/EvaluatorProfile';
 import { ActivityItem } from '@/components/admin/RecentActivityFeed';
 import { generateDemoActivities } from '@/utils/demoActivityData';
+import { Order, OrderStatus } from '@/services/api';
 
-// Use existing Order type from API instead of redefining
 // Extended evaluator for internal admin use
-interface AdminEvaluator extends EvaluatorProfile {
+interface AdminEvaluator extends Omit<EvaluatorProfile, 'evaluationsCompleted'> {
   evaluationsCompleted?: number;
 }
 
@@ -46,7 +47,7 @@ const Admin: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [metrics, setMetrics] = useState<AdminMetricsType | null>(null);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-  const [evaluators, setEvaluators] = useState<EvaluatorProfile[]>([]);
+  const [evaluators, setEvaluators] = useState<AdminEvaluator[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
@@ -274,7 +275,7 @@ const Admin: React.FC = () => {
               {/* Main content area */}
               <div className="lg:col-span-9 space-y-6">
                 {/* Top row - Key metrics cards */}
-                <KeyMetricsCards orders={pendingOrders} />
+                <KeyMetricsCards orders={pendingOrders as any} />
                 
                 {/* Second row - Charts section */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -288,7 +289,7 @@ const Admin: React.FC = () => {
                 
                 {/* Third row - Activity and heatmap */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <ActivityCards completedOrders={completedOrders} />
+                  <ActivityCards completedOrders={completedOrders as any} />
                   <PropertyHeatmap className="h-full" />
                 </div>
                 

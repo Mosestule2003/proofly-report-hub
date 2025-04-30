@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
@@ -20,8 +19,8 @@ export function Sidebar({
   return (
     <div
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-full flex-col border-r bg-background transition-all duration-300",
-        collapsed ? "w-16" : "w-64",
+        "fixed top-0 z-40 flex h-full flex-col border-r bg-background transition-all duration-300",
+        collapsed ? "w-0 opacity-0 border-r-0" : "w-64 left-0",
         className
       )}
       {...props}
@@ -32,7 +31,10 @@ export function Sidebar({
           variant="ghost" 
           size="icon" 
           onClick={onToggleCollapse}
-          className="absolute -right-4 top-20 h-8 w-8 rounded-full border bg-background shadow-md"
+          className={cn(
+            "absolute top-20 h-8 w-8 rounded-full border bg-background shadow-md",
+            collapsed ? "left-4" : "-right-4"
+          )}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
