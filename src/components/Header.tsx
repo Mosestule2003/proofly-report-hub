@@ -10,10 +10,12 @@ export function Header() {
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   
-  // Don't show header on admin pages
+  // Don't show header on admin pages except for login
   const isAdminPage = location.pathname.startsWith('/admin');
+  const isAdminLoginPage = location.pathname === '/admin/login';
   
-  if (isAdminPage) {
+  // Only hide on admin pages that are not the login page
+  if (isAdminPage && !isAdminLoginPage) {
     return <ReturnToAdminBanner />;
   }
 
