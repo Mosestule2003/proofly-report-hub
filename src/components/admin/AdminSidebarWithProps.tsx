@@ -7,7 +7,9 @@ import {
   ShoppingCart, 
   User, 
   MessagesSquare, 
-  Settings 
+  Settings,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { 
   Sidebar, 
@@ -34,6 +36,7 @@ const AdminSidebarWithProps: React.FC<AdminSidebarWithPropsProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const [collapsed, setCollapsed] = React.useState(false);
   
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: <LayoutDashboard className="h-5 w-5" /> },
@@ -53,7 +56,9 @@ const AdminSidebarWithProps: React.FC<AdminSidebarWithPropsProps> = ({
     ? { 
         className: `fixed inset-y-0 left-0 z-50 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'}`,
       } 
-    : {};
+    : {
+        className: `transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`
+      };
   
   return (
     <>
@@ -63,54 +68,90 @@ const AdminSidebarWithProps: React.FC<AdminSidebarWithPropsProps> = ({
           onClick={onClose}
         />
       )}
-      <Sidebar {...sidebarProps}>
-        <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <div className="rounded-md bg-primary p-1.5">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M8 1L14 5V11L8 15L2 11V5L8 1Z" fill="white" />
-              </svg>
+      <div className="relative">
+        <Sidebar {...sidebarProps}>
+          <SidebarHeader>
+            <div className="flex items-center justify-between">
+              {!collapsed && (
+                <div className="flex items-center gap-2">
+                  <div className="rounded-md bg-primary p-1.5">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 1L14 5V11L8 15L2 11V5L8 1Z" fill="white" />
+                    </svg>
+                  </div>
+                  <span className="font-semibold text-lg">Proofly Admin</span>
+                </div>
+              )}
+              {collapsed && (
+                <div className="mx-auto rounded-md bg-primary p-1.5">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 1L14 5V11L8 15L2 11V5L8 1Z" fill="white" />
+                  </svg>
+                </div>
+              )}
+              {!isMobile && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="ml-auto" 
+                  onClick={() => setCollapsed(!collapsed)}
+                >
+                  {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                </Button>
+              )}
             </div>
-            <span className="font-semibold text-lg">Proofly Admin</span>
-          </div>
-        </SidebarHeader>
-        
-        <SidebarNav>
-          {navItems.map((item) => (
-            <SidebarNavItem 
-              key={item.path} 
-              href={item.path} 
-              icon={item.icon}
-              active={location.pathname === item.path}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate(item.path);
-                if (isMobile) onClose();
-              }}
-            >
-              {item.name}
-            </SidebarNavItem>
-          ))}
-        </SidebarNav>
-        
-        <SidebarFooter>
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="/avatar.png" />
-                <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">{user?.name || 'Admin User'}</span>
-                <span className="text-xs text-muted-foreground">{user?.email || 'admin@example.com'}</span>
+          </SidebarHeader>
+          
+          <SidebarNav>
+            {navItems.map((item) => (
+              <SidebarNavItem 
+                key={item.path} 
+                href={item.path} 
+                icon={item.icon}
+                active={location.pathname === item.path}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(item.path);
+                  if (isMobile) onClose();
+                }}
+              >
+                {!collapsed && <span>{item.name}</span>}
+              </SidebarNavItem>
+            ))}
+          </SidebarNav>
+          
+          {!collapsed && (
+            <SidebarFooter>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="/avatar.png" />
+                    <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{user?.name || 'Admin User'}</span>
+                    <span className="text-xs text-muted-foreground">{user?.email || 'admin@example.com'}</span>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  Sign Out
+                </Button>
               </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              Sign Out
-            </Button>
-          </div>
-        </SidebarFooter>
-      </Sidebar>
+            </SidebarFooter>
+          )}
+          
+          {collapsed && (
+            <SidebarFooter>
+              <div className="flex justify-center">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/avatar.png" />
+                  <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || 'AD'}</AvatarFallback>
+                </Avatar>
+              </div>
+            </SidebarFooter>
+          )}
+        </Sidebar>
+      </div>
     </>
   );
 };

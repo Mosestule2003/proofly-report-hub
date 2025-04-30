@@ -39,6 +39,7 @@ const MainDashboardGrid: React.FC<MainDashboardGridProps> = ({
         evaluators={evaluators}
         activityItems={activityItems}
         handleUpdateOrderStatus={handleUpdateOrderStatus}
+        className="lg:col-span-2"
       />
     </div>
   );

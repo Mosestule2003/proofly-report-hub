@@ -16,6 +16,7 @@ interface ContentColumnProps {
   evaluators: AdminEvaluator[];
   activityItems: ActivityItem[];
   handleUpdateOrderStatus: (orderId: string, newStatus: 'Evaluator Assigned' | 'In Progress') => Promise<void>;
+  className?: string;
 }
 
 const ContentColumn: React.FC<ContentColumnProps> = ({
@@ -23,10 +24,11 @@ const ContentColumn: React.FC<ContentColumnProps> = ({
   completedOrders,
   evaluators,
   activityItems,
-  handleUpdateOrderStatus
+  handleUpdateOrderStatus,
+  className = ""
 }) => {
   return (
-    <div className="lg:col-span-2 space-y-6 w-full">
+    <div className={`space-y-6 w-full ${className}`}>
       {/* Key metrics cards */}
       <KeyMetricsCards 
         orders={pendingOrders} 

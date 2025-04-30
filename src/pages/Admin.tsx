@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import AdminSidebarWithProps from '@/components/admin/AdminSidebarWithProps';
 import AdminTopBarWithTrigger from '@/components/admin/AdminTopBarWithTrigger';
 import AdminDashboard from '@/components/admin/AdminDashboard';
@@ -38,7 +38,7 @@ const Admin: React.FC = () => {
 
         {/* Scrollable main content */}
         <div className="flex-1 overflow-auto pb-8">
-          <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="container max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <AdminDashboard 
               metrics={metrics}
               pendingOrders={pendingOrders}
