@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -13,14 +14,12 @@ interface PendingOrdersProps {
   pendingOrders: Order[];
   evaluators: Evaluator[];
   onUpdateStatus: (orderId: string, newStatus: 'Evaluator Assigned' | 'In Progress') => Promise<void>;
-  className?: string; // Added className prop
 }
 
 const PendingOrders: React.FC<PendingOrdersProps> = ({ 
   pendingOrders, 
   evaluators,
-  onUpdateStatus,
-  className = '' // Default empty string
+  onUpdateStatus
 }) => {
   const [expandedProperties, setExpandedProperties] = useState<string[]>([]);
   const [selectedEvaluator, setSelectedEvaluator] = useState<string | null>(null);
@@ -34,7 +33,7 @@ const PendingOrders: React.FC<PendingOrdersProps> = ({
   };
 
   return (
-    <Card className={className}>
+    <Card>
       <CardHeader>
         <CardTitle>Pending Evaluation Requests</CardTitle>
       </CardHeader>

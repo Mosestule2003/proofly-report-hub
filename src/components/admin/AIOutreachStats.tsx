@@ -1,25 +1,24 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircleCheck, Phone, Clock, CalendarCheck } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 interface AIOutreachStatsProps {
-  successRate?: number;
-  totalOutreaches?: number;
-  scheduledViewings?: number;
-  avgResponseTime?: string;
-  className?: string; // Added className prop
+  successRate: number;
+  totalOutreaches: number;
+  scheduledViewings: number;
+  avgResponseTime: string;
 }
 
 const AIOutreachStats: React.FC<AIOutreachStatsProps> = ({
-  successRate = 78,
-  totalOutreaches = 124,
-  scheduledViewings = 42,
-  avgResponseTime = "2.4h",
-  className = '' // Default empty string
+  successRate,
+  totalOutreaches,
+  scheduledViewings,
+  avgResponseTime
 }) => {
   return (
-    <Card className={className}>
+    <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           AI Outreach Performance
