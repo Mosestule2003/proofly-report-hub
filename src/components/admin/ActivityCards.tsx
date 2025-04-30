@@ -1,52 +1,80 @@
 
 import React from 'react';
-import { format } from 'date-fns';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Wrench } from 'lucide-react';
-import { Order } from '@/services/api';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  CheckCircle2, 
+  Clock, 
+  Star,
+  BarChart,
+  TrendingUp,
+  User
+} from 'lucide-react';
+
+interface Order {
+  id: string;
+  status?: string;
+  rating?: number;
+  tenantName?: string;
+  userId?: string;
+  date?: string;
+}
 
 interface ActivityCardsProps {
   completedOrders: Order[];
 }
 
-const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders }) => {
+const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders = [] }) => {
+  // Ensure we have valid data to display
+  const safeOrders = completedOrders || [];
+  
+  // Calculate average rating safely
+  const validRatings = safeOrders.filter(order => order.rating !== undefined);
+  const avgRating = validRatings.length > 0 
+    ? validRatings.reduce((sum, order) => sum + (order.rating || 0), 0) / validRatings.length 
+    : 0;
+  
+  // Get recent completions (last 24 hours)
+  const oneDayAgo = new Date();
+  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+  
+  const recentCompletions = safeOrders.filter(order => {
+    if (!order.date) return false;
+    const orderDate = new Date(order.date);
+    return orderDate >= oneDayAgo;
+  });
+  
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-base">Last Transactions</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs h-7">See All</Button>
-          </div>
+          <CardTitle className="text-base flex items-center">
+            <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+            Recent Completions
+          </CardTitle>
+          <CardDescription>Completed evaluations</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {completedOrders.slice(0, 3).map((order) => (
-              <div key={order.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-md bg-muted overflow-hidden">
-                    <img 
-                      src={`https://images.unsplash.com/photo-${Math.floor(Math.random() * 1000000000)}`} 
-                      alt="Property" 
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "https://images.unsplash.com/photo-1560518883-ce09059eeffa";
-                      }} 
-                    />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">
-                      {order.properties[0].address.split(',')[0]}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(order.createdAt), "d MMM yyyy, h:mm a")}
-                    </p>
-                  </div>
+          <div className="text-2xl font-bold">{recentCompletions.length}</div>
+          <p className="text-xs text-muted-foreground">
+            in the last 24 hours
+          </p>
+          <div className="mt-4 space-y-2">
+            {safeOrders.slice(0, 3).map((order) => (
+              <div key={order.id} className="flex items-center justify-between text-sm">
+                <div className="flex items-center">
+                  <Avatar className="h-6 w-6 mr-2">
+                    <AvatarImage src={`https://avatar.vercel.sh/${order.tenantName || 'user'}`} />
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate max-w-[150px]">{order.tenantName || 'Unknown User'}</span>
                 </div>
-                <p className="font-semibold">${order.totalPrice}</p>
+                <Badge variant="outline" className="text-xs">
+                  Completed
+                </Badge>
               </div>
             ))}
           </div>
@@ -55,78 +83,54 @@ const ActivityCards: React.FC<ActivityCardsProps> = ({ completedOrders }) => {
       
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-base">Maintenance Requests</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs h-7">See All</Button>
-          </div>
+          <CardTitle className="text-base flex items-center">
+            <Star className="mr-2 h-4 w-4 text-amber-500" />
+            Service Rating
+          </CardTitle>
+          <CardDescription>Average customer rating</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-primary">
-                  <Wrench className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">Plumbing | 721 Meadowview</p>
-                  <p className="text-xs text-muted-foreground">Request ID: MS-001</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Issue</p>
-                  <p className="text-sm">Broken Garbage</p>
-                </div>
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="https://randomuser.me/api/portraits/men/32.jpg" />
-                  <AvatarFallback>JD</AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-primary">
-                  <Wrench className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">Electrical | 721 Meadowview</p>
-                  <p className="text-xs text-muted-foreground">Request ID: MS-002</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Issue</p>
-                  <p className="text-sm">No Heat Bathroom</p>
-                </div>
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="https://randomuser.me/api/portraits/men/44.jpg" />
-                  <AvatarFallback>AF</AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-primary">
-                  <Wrench className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">HVAC | 721 Meadowview</p>
-                  <p className="text-xs text-muted-foreground">Request ID: MS-003</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Issue</p>
-                  <p className="text-sm">Non Functional Fan</p>
-                </div>
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="https://randomuser.me/api/portraits/men/55.jpg" />
-                  <AvatarFallback>RF</AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
+          <div className="text-2xl font-bold">{avgRating.toFixed(1)}/5.0</div>
+          <p className="text-xs text-muted-foreground">
+            based on {validRatings.length} ratings
+          </p>
+          <div className="mt-4 flex items-center">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star 
+                key={star} 
+                className={`h-5 w-5 ${star <= Math.round(avgRating) 
+                  ? 'text-amber-500 fill-amber-500' 
+                  : 'text-muted-foreground'}`}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center">
+            <TrendingUp className="mr-2 h-4 w-4 text-blue-500" />
+            Completion Rate
+          </CardTitle>
+          <CardDescription>Service efficiency</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">98%</div>
+          <p className="text-xs text-muted-foreground">
+            evaluations completed on time
+          </p>
+          <div className="mt-4 flex items-center space-x-2">
+            <BarChart className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              Average completion: 2.3 days
+            </span>
+          </div>
+          <div className="mt-2 flex items-center space-x-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              Fastest turnaround: 14 hours
+            </span>
           </div>
         </CardContent>
       </Card>

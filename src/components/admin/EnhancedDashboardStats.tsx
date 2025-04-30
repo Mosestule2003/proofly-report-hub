@@ -5,19 +5,19 @@ import { Building, CircleDollarSign, Users, Gauge } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 interface EnhancedDashboardStatsProps {
-  totalOrders: number;
-  evaluationsInProgress: number;
-  totalRevenue: number;
-  evaluationCompletionRate: number;
+  totalOrders?: number;
+  evaluationsInProgress?: number;
+  totalRevenue?: number;
+  evaluationCompletionRate?: number;
   className?: string;
 }
 
 const EnhancedDashboardStats: React.FC<EnhancedDashboardStatsProps> = ({
-  totalOrders,
-  evaluationsInProgress,
-  totalRevenue,
-  evaluationCompletionRate,
-  className
+  totalOrders = 0,
+  evaluationsInProgress = 0,
+  totalRevenue = 0,
+  evaluationCompletionRate = 0,
+  className = ''
 }) => {
   return (
     <div className={`grid grid-cols-1 md:grid-cols-4 gap-4 ${className}`}>
