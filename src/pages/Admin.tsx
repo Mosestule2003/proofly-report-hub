@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -16,12 +15,20 @@ import AIOutreachStats from '@/components/admin/AIOutreachStats';
 import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
 import LastTransactions from '@/components/admin/LastTransactions';
 import { api } from '@/services/api';
+import { Evaluator as EvaluatorProfile } from '@/components/EvaluatorProfile';
 
 // Define the types we need since they're not exported from the API
 interface Evaluator {
   id: string;
   name: string;
   rating: number;
+  evaluationsCompleted: number;
+  bio: string;
+  avatarUrl?: string;
+}
+
+// Extended evaluator for internal admin use
+interface AdminEvaluator extends Evaluator {
   completedEvaluations: number;
   availability: 'Available' | 'Busy';
   specialization: string;
@@ -40,6 +47,7 @@ interface Order {
   totalPrice: number;
   discount: number;
   createdAt: string;
+  evaluator?: Evaluator;
 }
 
 interface AdminMetricsType {
@@ -118,15 +126,35 @@ const convertToActivityItems = (data: any[]): ActivityItem[] => {
 
 const activityItems = convertToActivityItems(activityData);
 
+// Add props interface for AdminSidebar
+interface AdminSidebarProps {
+  open: boolean;
+  onClose: () => void;
+  isMobile: boolean;
+}
+
+// Add props interface for AdminTopBar
+interface AdminTopBarProps {
+  searchTerm: string;
+  setSearchTerm: () => void;
+  onOpenSidebar: () => void;
+}
+
+// Add props interface for ActivityCards
+interface ActivityCardsProps {
+  completedOrders: Order[];
+}
+
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [metrics, setMetrics] = useState<AdminMetricsType | null>(null);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-  const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
+  const [evaluators, setEvaluators] = useState<AdminEvaluator[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     // Check if mobile on mount and whenever window resizes
@@ -155,6 +183,10 @@ const Admin: React.FC = () => {
       .then(orders => {
         const pending = orders.filter(order => order.status === 'Pending');
         setPendingOrders(pending as Order[]);
+        
+        // Also set completed orders for ActivityCards
+        const completed = orders.filter(order => order.status === 'Completed' || order.status === 'Report Ready');
+        setCompletedOrders(completed as Order[]);
       })
       .catch(err => {
         console.error("Failed to load orders:", err);
@@ -163,16 +195,21 @@ const Admin: React.FC = () => {
     // Load evaluators for the assignment widget
     api.getAllEvaluators()
       .then(data => {
-        const typedEvaluators = data.map(evaluator => ({
-          id: evaluator.id,
-          name: evaluator.name,
-          rating: evaluator.rating,
-          completedEvaluations: evaluator.completedEvaluations,
-          availability: evaluator.availability === 'Available' || evaluator.availability === 'Busy' 
-            ? evaluator.availability 
-            : 'Busy' as 'Available' | 'Busy',
-          specialization: evaluator.specialization
-        }));
+        const typedEvaluators = data.map(evaluator => {
+          // Convert to our AdminEvaluator type with required properties
+          return {
+            id: evaluator.id,
+            name: evaluator.name,
+            rating: evaluator.rating,
+            completedEvaluations: evaluator.completedEvaluations || 0,
+            evaluationsCompleted: evaluator.evaluationsCompleted || 0,
+            bio: evaluator.bio || "Professional property evaluator",
+            availability: (evaluator.availability === 'Available' || evaluator.availability === 'Busy') 
+              ? evaluator.availability 
+              : 'Busy' as 'Available' | 'Busy',
+            specialization: evaluator.specialization || "Residential properties"
+          };
+        });
         
         setEvaluators(typedEvaluators);
       })
@@ -300,7 +337,7 @@ const Admin: React.FC = () => {
                 <SalesChart />
                 
                 {/* Activity cards */}
-                <ActivityCards />
+                <ActivityCards completedOrders={completedOrders} />
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Recent activity feed */}
@@ -313,7 +350,7 @@ const Admin: React.FC = () => {
                 {/* Pending orders with evaluator assignment */}
                 <PendingOrders 
                   pendingOrders={pendingOrders} 
-                  evaluators={evaluators}
+                  evaluators={evaluators as unknown as EvaluatorProfile[]}
                   onUpdateStatus={handleUpdateOrderStatus}
                 />
                 

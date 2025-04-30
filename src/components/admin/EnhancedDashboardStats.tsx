@@ -19,6 +19,10 @@ const EnhancedDashboardStats: React.FC<EnhancedDashboardStatsProps> = ({
   evaluationCompletionRate = 0,
   className
 }) => {
+  // Ensure we have a safe number for formatting
+  const formattedRevenue = typeof totalRevenue === 'number' ? 
+    totalRevenue.toLocaleString() : '0';
+  
   return (
     <div className={`grid grid-cols-1 md:grid-cols-4 gap-4 ${className}`}>
       <Card>
@@ -59,7 +63,7 @@ const EnhancedDashboardStats: React.FC<EnhancedDashboardStatsProps> = ({
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Revenue</p>
-              <h2 className="text-2xl font-bold">${totalRevenue.toLocaleString()}</h2>
+              <h2 className="text-2xl font-bold">${formattedRevenue}</h2>
               <p className="text-xs text-green-600">↑ 8% from last month</p>
             </div>
           </div>
