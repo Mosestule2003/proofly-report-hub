@@ -341,7 +341,14 @@ const Admin: React.FC = () => {
                 <SalesChart />
                 
                 {/* Activity cards */}
-                <ActivityCards completedOrders={orders?.filter((o: any) => o.status === 'Completed') || []} />
+                <ActivityCards completedOrders={orders?.filter((o: any) => o.status === 'Completed').map((order: any) => ({
+                  id: order.id,
+                  status: order.status,
+                  rating: order.rating,
+                  tenantName: order.userName,
+                  userId: order.userId,
+                  date: order.createdAt
+                })) || []} />
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Recent activity feed */}
@@ -354,7 +361,7 @@ const Admin: React.FC = () => {
                 {/* Pending orders with evaluator assignment */}
                 <PendingOrders 
                   pendingOrders={pendingOrders} 
-                  evaluators={evaluators}
+                  evaluators={evaluators as any[]}
                   onUpdateStatus={handleUpdateOrderStatus}
                 />
                 
