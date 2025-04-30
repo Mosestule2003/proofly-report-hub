@@ -1,377 +1,207 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { api, Order, AdminMetrics } from '@/services/api';
-import { Evaluator } from '@/components/EvaluatorProfile';
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { AdminTopBar } from '@/components/admin/AdminTopBar';
+import { AdminHeader } from '@/components/admin/AdminHeader';
+import { AdminMetrics } from '@/components/AdminMetrics';
+import { EnhancedDashboardStats } from '@/components/admin/EnhancedDashboardStats';
+import { SalesChart } from '@/components/admin/SalesChart';
+import { PendingInquiries } from '@/components/admin/PendingInquiries';
+import { PendingOrders } from '@/components/admin/PendingOrders';
+import { RecentActivityFeed } from '@/components/admin/RecentActivityFeed';
+import { ActivityCards } from '@/components/admin/ActivityCards';
+import { KeyMetricsCards } from '@/components/admin/KeyMetricsCards';
+import { AIOutreachStats } from '@/components/admin/AIOutreachStats';
+import { PropertyHeatmap } from '@/components/admin/PropertyHeatmap';
+import { LastTransactions } from '@/components/admin/LastTransactions';
+import { api, Evaluator, Order, AdminMetrics as AdminMetricsType, Transaction } from '@/services/api';
 
-// Import our components
-import AdminSidebar from '@/components/admin/AdminSidebar';
-import AdminTopBar from '@/components/admin/AdminTopBar';
-import EnhancedDashboardStats from '@/components/admin/EnhancedDashboardStats';
-import SalesChart from '@/components/admin/SalesChart';
-import CostBreakdown from '@/components/admin/CostBreakdown';
-import LastTransactions from '@/components/admin/LastTransactions';
-import PendingInquiries from '@/components/admin/PendingInquiries';
-import UsersList from '@/components/admin/UsersList';
-import AIOutreachStats from '@/components/admin/AIOutreachStats';
-import PropertyHeatmap from '@/components/admin/PropertyHeatmap';
-import RecentActivityFeed from '@/components/admin/RecentActivityFeed';
-
-// Import existing order detail components
-import PendingOrders from '@/components/admin/PendingOrders';
-import InProgressOrders from '@/components/admin/InProgressOrders';
-import CompletedOrders from '@/components/admin/CompletedOrders';
-
-// Import tracker for current order view
-import PropertyEvaluationTracker from '@/components/PropertyEvaluationTracker';
-
-// Import demo data generator
-import { generateDemoActivities, generateRandomMetrics } from '@/utils/demoActivityData';
-
-// Tabs and dialog components
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+// Sample activity data
+import { activityData } from '@/utils/demoActivityData';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
-  
-  // State
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [metrics, setMetrics] = useState<AdminMetricsType | null>(null);
+  const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [viewingOrderDetails, setViewingOrderDetails] = useState(false);
-  const [activities, setActivities] = useState<any[]>([]);
-  const [dashboardMetrics, setDashboardMetrics] = useState<any>(null);
-  
-  // Calculate total earnings from completed orders
-  const totalEarnings = orders
-    .filter(order => order.status === 'Report Ready')
-    .reduce((sum, order) => sum + order.totalPrice, 0);
-  
-  // Protect route - only admins can access
+  const [salesData, setSalesData] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
   useEffect(() => {
-    if (!isLoading && (!isAuthenticated || user?.role !== 'admin')) {
-      toast.error("Unauthorized access");
-      navigate('/admin/login');
-    }
-  }, [isAuthenticated, user, navigate, isLoading]);
-  
-  // Load orders, metrics and evaluators
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user || user.role !== 'admin') return;
-      
-      setIsLoading(true);
-      
-      try {
-        // Initialize mock data
-        api.initMockData(user);
-        
-        // Ensure all orders are visible to admin
-        api.ensureOrdersVisibleToAdmin();
-        
-        // Get all orders and data (admin has access to all)
-        const [allOrders, adminMetrics, allEvaluators] = await Promise.all([
-          api.getOrders(), // No userId means get all orders
-          api.getAdminMetrics(),
-          api.getAllEvaluators()
-        ]);
-        
-        setOrders(allOrders);
-        setMetrics(adminMetrics);
-        setEvaluators(allEvaluators);
-        
-        // Set demo activities data
-        setActivities(generateDemoActivities());
-        setDashboardMetrics(generateRandomMetrics());
-        
-      } catch (error) {
-        console.error('Error loading admin data:', error);
-        toast.error("Failed to load admin data");
-      } finally {
-        setIsLoading(false);
-      }
+    // Check if mobile on mount and whenever window resizes
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
     };
+
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  useEffect(() => {
+    // Load admin metrics
+    api.getAdminMetrics()
+      .then(data => {
+        setMetrics(data);
+      })
+      .catch(err => {
+        console.error("Failed to load admin metrics:", err);
+      });
     
-    loadData();
+    // Load orders for the pending orders widget
+    api.getOrders()
+      .then(orders => {
+        const pending = orders.filter(order => order.status === 'Pending');
+        setPendingOrders(pending);
+      })
+      .catch(err => {
+        console.error("Failed to load orders:", err);
+      });
     
-    // Subscribe to WebSocket updates
+    // Load evaluators for the assignment widget
+    api.getAllEvaluators()
+      .then(data => {
+        setEvaluators(data);
+      })
+      .catch(err => {
+        console.error("Failed to load evaluators:", err);
+      });
+    
+    // Load sales data for charts
+    api.getSalesData()
+      .then(data => {
+        setSalesData(data);
+      })
+      .catch(err => {
+        console.error("Failed to load sales data:", err);
+      });
+      
+    // Load transaction data for LastTransactions component
+    api.getTransactions()
+      .then(data => {
+        setTransactions(data);
+      })
+      .catch(err => {
+        console.error("Failed to load transactions:", err);
+      });
+    
+    // Subscribe to admin updates
     const unsubscribe = api.subscribeToAdminUpdates((data) => {
-      // Handle different types of updates
-      if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED' || data.type === 'ORDER_STEP_UPDATE') {
-        // Refresh orders
-        api.getOrders().then(updatedOrders => {
-          setOrders(updatedOrders);
-        });
-        
-        // Refresh metrics
-        api.getAdminMetrics().then(updatedMetrics => {
-          setMetrics(updatedMetrics);
-        });
-        
-        // Show a toast notification for new orders
-        if (data.type === 'ORDER_CREATED') {
-          toast.success(`New order received! Order #${data.order.id.substring(0, 8)}`);
-        }
+      // Handle different update types
+      if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED') {
+        // Refresh orders when there's an update
+        api.getOrders()
+          .then(orders => {
+            const pending = orders.filter(order => order.status === 'Pending');
+            setPendingOrders(pending);
+          })
+          .catch(err => {
+            console.error("Failed to refresh orders:", err);
+          });
       }
     });
     
-    // Cleanup
+    // Ensure we see all orders (useful when admin logs in after new tenants create orders)
+    api.ensureOrdersVisibleToAdmin();
+    
+    // Cleanup subscription on unmount
     return () => {
       unsubscribe();
     };
-  }, [user]);
-  
-  // Filter orders by search term
-  const filteredOrders = orders.filter(order => 
-    order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    order.properties.some(p => p.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (order.agentContact?.name && order.agentContact.name.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-  
-  // Handle order status updates
-  const handleUpdateStatus = async (orderId: string, newStatus: 'Evaluator Assigned' | 'In Progress') => {
+  }, []);
+
+  // Handle assigning evaluator to order
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: 'Evaluator Assigned' | 'In Progress') => {
     try {
-      const updatedOrder = await api.updateOrderStatus(orderId, newStatus);
-      
-      if (updatedOrder) {
-        setOrders(prev => 
-          prev.map(order => 
-            order.id === orderId ? updatedOrder : order
-          )
-        );
-        
-        toast.success(`Order status updated to ${newStatus}`);
-      }
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      toast.error("Failed to update order status");
+      await api.updateOrderStatus(orderId, newStatus);
+      // Refresh pending orders
+      const allOrders = await api.getOrders();
+      const pending = allOrders.filter(order => order.status === 'Pending');
+      setPendingOrders(pending);
+    } catch (err) {
+      console.error("Failed to update order status:", err);
     }
   };
-  
-  // Handle order step advancement
-  const handleAdvanceOrderStep = async (orderId: string) => {
-    try {
-      const updatedOrder = await api.advanceOrderStep(orderId);
-      
-      if (updatedOrder) {
-        // Update orders with the new data
-        setOrders(prev => 
-          prev.map(order => 
-            order.id === orderId ? updatedOrder : order
-          )
-        );
-        
-        toast.success(`Advanced order to next step`);
-        
-        // If viewing this order, update the selected order
-        if (selectedOrder?.id === orderId) {
-          setSelectedOrder(updatedOrder);
-        }
-      }
-    } catch (error) {
-      console.error('Error advancing order step:', error);
-      toast.error("Failed to advance order step");
-    }
-  };
-  
-  // Handle report submission
-  const handleSubmitReport = async (orderId: string, comments: string, imageUrl: string, videoUrl: string) => {
-    try {
-      await api.createReport(
-        orderId,
-        comments,
-        imageUrl || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa',
-        videoUrl
-      );
-      
-      // Update local order data
-      const updatedOrder = await api.getOrderById(orderId);
-      if (updatedOrder) {
-        setOrders(prev => 
-          prev.map(order => 
-            order.id === orderId ? updatedOrder : order
-          )
-        );
-      }
-      
-      toast.success("Report submitted successfully");
-    } catch (error) {
-      console.error('Error submitting report:', error);
-      toast.error("Failed to submit report");
-      throw error;
-    }
-  };
-  
-  // View transaction details
-  const handleViewTransaction = (orderId: string) => {
-    const order = orders.find(order => order.id === orderId);
-    if (order) {
-      setSelectedOrder(order);
-      setViewingOrderDetails(true);
-    }
-  };
-  
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="container py-20 flex justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold">Loading admin dashboard...</h2>
-        </div>
-      </div>
-    );
-  }
-  
-  // Filter orders by status
-  const pendingOrders = filteredOrders.filter(o => o.status === 'Pending');
-  const assignedOrders = filteredOrders.filter(o => ['Evaluator Assigned', 'In Progress'].includes(o.status));
-  const completedOrders = filteredOrders.filter(o => o.status === 'Report Ready');
-  
+
   return (
-    <div className="bg-background min-h-screen">
-      {/* Left sidebar */}
-      <AdminSidebar />
-      
+    <div className="flex h-screen bg-background">
+      {/* Sidebar for desktop and slide-over for mobile */}
+      <AdminSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isMobile={isMobile}
+      />
+
       {/* Main content area */}
-      <div className="pl-64 min-h-screen">
-        <div className="container py-6">
-          {/* Top bar */}
-          <AdminTopBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-          
-          {/* Enhanced Stats cards */}
-          {dashboardMetrics && (
-            <EnhancedDashboardStats 
-              className="mb-6"
-              totalOrders={dashboardMetrics.totalOrders} 
-              evaluationsInProgress={dashboardMetrics.evaluationsInProgress}
-              totalRevenue={dashboardMetrics.totalRevenue}
-              evaluationCompletionRate={dashboardMetrics.evaluationCompletionRate}
-            />
-          )}
-          
-          {/* AI Outreach and Property Heatmap */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {dashboardMetrics && (
-              <AIOutreachStats
-                successRate={dashboardMetrics.successRate}
-                totalOutreaches={dashboardMetrics.totalOutreaches}
-                scheduledViewings={dashboardMetrics.scheduledViewings}
-                avgResponseTime={dashboardMetrics.avgResponseTime}
-              />
-            )}
-            <PropertyHeatmap className="md:col-span-2" />
-          </div>
-          
-          {/* Charts and Activity section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <SalesChart className="md:col-span-2" />
-            <RecentActivityFeed activities={activities} />
-          </div>
-          
-          {/* Users section */}
-          <div className="mb-6">
-            <UsersList />
-          </div>
-          
-          {/* Transactions and inquiries section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <LastTransactions 
-              transactions={orders} 
-              onViewTransaction={(orderId) => {
-                const order = orders.find(order => order.id === orderId);
-                if (order) {
-                  setSelectedOrder(order);
-                  setViewingOrderDetails(true);
-                }
-              }}
-              className="md:col-span-2"
-            />
-            <PendingInquiries />
-          </div>
-          
-          {/* Order Management */}
-          <Tabs defaultValue="pending" className="space-y-4 mt-8">
-            <TabsList>
-              <TabsTrigger value="pending" className="relative">
-                Pending Orders
-                {pendingOrders.length > 0 && (
-                  <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 min-w-[20px] inline-flex items-center justify-center px-1">
-                    {pendingOrders.length}
-                  </span>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AdminTopBar onOpenSidebar={() => setSidebarOpen(true)} />
+
+        {/* Scrollable main content */}
+        <div className="flex-1 overflow-auto pb-8">
+          <div className="container max-w-7xl mx-auto px-4 py-6">
+            <AdminHeader />
+
+            {/* Main dashboard grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+              {/* First column: 1/3 width on large screens */}
+              <div className="lg:col-span-1 space-y-6">
+                {/* Admin metrics */}
+                {metrics && (
+                  <AdminMetrics 
+                    tenantCount={metrics.tenantCount} 
+                    orderCount={metrics.orderCount}
+                    pendingOrderCount={metrics.pendingOrderCount}
+                    completedOrderCount={metrics.completedOrderCount}
+                  />
                 )}
-              </TabsTrigger>
-              <TabsTrigger value="assigned" className="relative">
-                In Progress
-                {assignedOrders.length > 0 && (
-                  <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 min-w-[20px] inline-flex items-center justify-center px-1">
-                    {assignedOrders.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="completed">
-                Completed
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="pending">
-              <PendingOrders 
-                pendingOrders={pendingOrders}
-                evaluators={evaluators}
-                onUpdateStatus={handleUpdateStatus}
-              />
-            </TabsContent>
-            
-            <TabsContent value="assigned">
-              <InProgressOrders 
-                assignedOrders={assignedOrders}
-                onUpdateStatus={handleUpdateStatus}
-                onAdvanceOrderStep={handleAdvanceOrderStep}
-                onSubmitReport={handleSubmitReport}
-              />
-            </TabsContent>
-            
-            <TabsContent value="completed">
-              <CompletedOrders
-                completedOrders={completedOrders}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-      
-      {/* Order detail dialog */}
-      <Dialog open={viewingOrderDetails} onOpenChange={setViewingOrderDetails}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Order #{selectedOrder?.id.substring(0, 8) || ''}</DialogTitle>
-          </DialogHeader>
-          
-          {selectedOrder && (
-            <div className="mt-4">
-              <PropertyEvaluationTracker order={selectedOrder} />
+                
+                {/* Condensed stats */}
+                <EnhancedDashboardStats />
+                
+                {/* Transactions */}
+                <LastTransactions transactions={transactions} />
+                
+                {/* AI Outreach Stats */}
+                <AIOutreachStats />
+              </div>
               
-              <div className="mt-6 flex justify-end">
-                {selectedOrder.status !== 'Report Ready' && (
-                  <button 
-                    className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
-                    onClick={() => handleAdvanceOrderStep(selectedOrder.id)}
-                  >
-                    Advance to Next Step
-                  </button>
-                )}
+              {/* Second column: 2/3 width on large screens */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Key metrics cards */}
+                <KeyMetricsCards />
+                
+                {/* Charts */}
+                <SalesChart data={salesData} />
+                
+                {/* Activity cards */}
+                <ActivityCards />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Recent activity feed */}
+                  <RecentActivityFeed activities={activityData} className="h-full" />
+                  
+                  {/* Property heatmap */}
+                  <PropertyHeatmap className="h-full" />
+                </div>
+                
+                {/* Pending orders with evaluator assignment */}
+                <PendingOrders 
+                  pendingOrders={pendingOrders} 
+                  evaluators={evaluators}
+                  onUpdateStatus={handleUpdateOrderStatus}
+                />
+                
+                {/* Pending inquiries */}
+                <PendingInquiries />
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
