@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -12,10 +11,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
-
 const AdminOrders: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const {
+    user,
+    isAuthenticated
+  } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,9 +33,7 @@ const AdminOrders: React.FC = () => {
   useEffect(() => {
     const loadOrders = async () => {
       if (!user || user.role !== 'admin') return;
-      
       setIsLoading(true);
-      
       try {
         const allOrders = await api.getOrders();
         setOrders(allOrders);
@@ -45,25 +44,24 @@ const AdminOrders: React.FC = () => {
         setIsLoading(false);
       }
     };
-    
     loadOrders();
-    
+
     // Subscribe to WebSocket updates
-    const unsubscribe = api.subscribeToAdminUpdates((data) => {
+    const unsubscribe = api.subscribeToAdminUpdates(data => {
       // Handle different types of updates
       if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED' || data.type === 'ORDER_STEP_UPDATE') {
         // Refresh orders
         api.getOrders().then(updatedOrders => {
           setOrders(updatedOrders);
         });
-        
+
         // Show a toast notification for new orders
         if (data.type === 'ORDER_CREATED') {
           toast.success(`New order received! Order #${data.order.id.substring(0, 8)}`);
         }
       }
     });
-    
+
     // Cleanup
     return () => {
       unsubscribe();
@@ -71,20 +69,21 @@ const AdminOrders: React.FC = () => {
   }, [user]);
 
   // Filter orders by search term
-  const filteredOrders = orders.filter(order => 
-    order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    order.properties.some(p => p.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (order.agentContact?.name && order.agentContact.name.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredOrders = orders.filter(order => order.id.toLowerCase().includes(searchTerm.toLowerCase()) || order.properties.some(p => p.address.toLowerCase().includes(searchTerm.toLowerCase())) || order.agentContact?.name && order.agentContact.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   // Status badge color
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Evaluator Assigned': return 'bg-blue-100 text-blue-800';
-      case 'In Progress': return 'bg-purple-100 text-purple-800';
-      case 'Report Ready': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Evaluator Assigned':
+        return 'bg-blue-100 text-blue-800';
+      case 'In Progress':
+        return 'bg-purple-100 text-purple-800';
+      case 'Report Ready':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -92,9 +91,7 @@ const AdminOrders: React.FC = () => {
   const handleViewDetails = (orderId: string) => {
     navigate(`/admin/orders/${orderId}`);
   };
-
-  return (
-    <div className="bg-background min-h-screen">
+  return <div className="bg-background min-h-screen">
       {/* Left sidebar */}
       <AdminSidebar />
       
@@ -110,12 +107,9 @@ const AdminOrders: React.FC = () => {
               <CardTitle>All Orders</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center h-32">
+              {isLoading ? <div className="flex justify-center items-center h-32">
                   <p className="text-muted-foreground">Loading orders...</p>
-                </div>
-              ) : (
-                <Table>
+                </div> : <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Order ID</TableHead>
@@ -128,15 +122,11 @@ const AdminOrders: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredOrders.length === 0 ? (
-                      <TableRow>
+                    {filteredOrders.length === 0 ? <TableRow>
                         <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                           No orders found
                         </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredOrders.map((order) => (
-                        <TableRow key={order.id}>
+                      </TableRow> : filteredOrders.map(order => <TableRow key={order.id}>
                           <TableCell className="font-medium">#{order.id.substring(0, 8)}</TableCell>
                           <TableCell>
                             {format(new Date(order.createdAt), 'MMM d, yyyy')}
@@ -152,26 +142,17 @@ const AdminOrders: React.FC = () => {
                             <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
                           </TableCell>
                           <TableCell>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => handleViewDetails(order.id)}
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => handleViewDetails(order.id)} className="when i click on the see icon i want to be able to see all the onformation and deatilas aboit that irder and the live uopdates etc\n">
                               <Eye className="h-4 w-4" />
                             </Button>
                           </TableCell>
-                        </TableRow>
-                      ))
-                    )}
+                        </TableRow>)}
                   </TableBody>
-                </Table>
-              )}
+                </Table>}
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AdminOrders;
