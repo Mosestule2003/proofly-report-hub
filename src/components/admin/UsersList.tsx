@@ -9,6 +9,7 @@ import AddUserDialog from './AddUserDialog';
 import UsersTable, { User } from './UsersTable';
 import DeleteUserDialog from './DeleteUserDialog';
 import UsersListHeader from './UsersListHeader';
+import { useNotificationsContext } from '@/context/NotificationsContext';
 
 interface UsersListProps {
   className?: string;
@@ -23,6 +24,7 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
   const [showAddUserDialog, setShowAddUserDialog] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const { user } = useAuth();
+  const { notifications } = useNotificationsContext();
   
   // Filter users based on search term
   const filteredUsers = users.filter(u => 
@@ -81,6 +83,23 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
         });
         
         setUsers(sortedUsers);
+        
+        // Check if new user was added
+        if (data.newUser) {
+          // Create notification for admin about new user
+          notifications.addNotification(
+            'New User Registered', 
+            `${data.newUser.name} (${data.newUser.email}) has created a new account.`,
+            {
+              type: 'info',
+              showToast: true,
+              actionUrl: `/admin/users/${data.newUser.id}`
+            }
+          );
+        }
+      } else if (data.type === 'USER_CREATED' && data.user) {
+        // Reload users to ensure the new user is included
+        loadUsers();
       }
     });
     
@@ -88,7 +107,7 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
     return () => {
       unsubscribe();
     };
-  }, [user]);
+  }, [user, notifications]);
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
@@ -97,6 +116,13 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
       await api.deleteUser(userToDelete.id);
       toast.success(`User ${userToDelete.name} has been deleted`);
       // User list will be updated via the subscription
+      
+      // Add notification about user deletion
+      notifications.addNotification(
+        'User Deleted', 
+        `User ${userToDelete.name} has been deleted from the system.`,
+        { type: 'warning', showToast: true }
+      );
     } catch (error) {
       console.error('Error deleting user:', error);
       toast.error('Failed to delete user');

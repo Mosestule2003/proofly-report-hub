@@ -138,7 +138,7 @@ const notifyWebSocketListeners = (channel: string, data: any) => {
 };
 
 // Helper to create a new notification
-const addNotification = (userId: string, title: string, message: string) => {
+const addNotification = (userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info', actionUrl?: string) => {
   if (!notifications[userId]) {
     notifications[userId] = [];
   }
@@ -149,7 +149,8 @@ const addNotification = (userId: string, title: string, message: string) => {
     message,
     date: new Date(),
     read: false,
-    type: 'info' // Default type
+    type,
+    actionUrl
   };
   
   notifications[userId] = [newNotification, ...notifications[userId]];
@@ -471,9 +472,12 @@ export const api = {
   },
   
   // Reports
-  createReport: async (orderId: string, comments: string, imageUrl?: string, videoUrl?: string): Promise<Report> => {
+  createReport: async (orderId: string, reportData: any): Promise<Report> => {
     // Simulate API delay
     await new Promise(r => setTimeout(r, 1000));
+    
+    // Extract report data
+    const { comments, imageUrl, videoUrl } = reportData;
     
     // Update order status
     await api.updateOrderStatus(orderId, 'Report Ready');
@@ -496,7 +500,9 @@ export const api = {
       addNotification(
         order.userId,
         'Report Ready',
-        `Your property evaluation report is now available to view.`
+        `Your property evaluation report is now available to view.`,
+        'success',
+        `/dashboard?orderId=${orderId}`
       );
     }
     
@@ -512,6 +518,10 @@ export const api = {
     });
     
     return newReport;
+  },
+  
+  createReportForOrder: async (orderId: string, reportData: any): Promise<Report> => {
+    return api.createReport(orderId, reportData);
   },
   
   getReportForOrder: async (orderId: string): Promise<Report | null> => {
@@ -797,11 +807,28 @@ export const api = {
     // Add to users array
     users = [...users, newUser];
     
+    // Add notifications for all admins about new user registration
+    const adminUsers = users.filter(u => u.role === 'admin');
+    adminUsers.forEach(admin => {
+      addNotification(
+        admin.id,
+        'New User Registration',
+        `${newUser.name} has created a new account.`,
+        'info',
+        `/admin/users/${newUser.id}`
+      );
+    });
+    
     // Notify WebSocket listeners
     notifyWebSocketListeners('users', { 
       type: 'USERS_UPDATED', 
       users,
       newUser
+    });
+    
+    notifyWebSocketListeners('users', { 
+      type: 'USER_CREATED', 
+      user: newUser
     });
     
     console.log(`New user created: ${newUser.name} (${newUser.role})`);
@@ -993,7 +1020,8 @@ export const api = {
           message: 'Thank you for joining our property evaluation platform.',
           date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
           read: true,
-          type: 'info'
+          type: 'info',
+          actionUrl: '/dashboard'
         },
         {
           id: '302',
@@ -1001,7 +1029,8 @@ export const api = {
           message: 'Your evaluation request for 2 properties has been received.',
           date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
           read: true,
-          type: 'info'
+          type: 'info',
+          actionUrl: '/dashboard'
         },
         {
           id: '303',
@@ -1009,7 +1038,8 @@ export const api = {
           message: 'Your property evaluation report is now available to view.',
           date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
           read: false,
-          type: 'success'
+          type: 'success',
+          actionUrl: '/dashboard'
         },
         {
           id: '304',
@@ -1018,6 +1048,49 @@ export const api = {
           date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
           read: false,
           type: 'info'
+        }
+      ];
+    }
+    
+    // Add notifications for admin user
+    const adminId = users.find(u => u.role === 'admin')?.id;
+    if (adminId) {
+      notifications[adminId] = [
+        {
+          id: '401',
+          title: 'Welcome to Admin Panel',
+          message: 'You now have access to the Proofly admin features.',
+          date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+          read: true,
+          type: 'info',
+          actionUrl: '/admin'
+        },
+        {
+          id: '402',
+          title: 'New User Registered',
+          message: 'Demo Tenant has created an account.',
+          date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
+          read: true,
+          type: 'info',
+          actionUrl: `/admin/users/${tenantId}`
+        },
+        {
+          id: '403',
+          title: 'New Order Placed',
+          message: 'Demo Tenant has placed an order for property evaluation.',
+          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+          read: true,
+          type: 'success',
+          actionUrl: '/admin/orders'
+        },
+        {
+          id: '404',
+          title: 'Report Generated',
+          message: 'Property evaluation report has been generated for Demo Tenant.',
+          date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+          read: false,
+          type: 'success',
+          actionUrl: '/admin/orders'
         }
       ];
     }

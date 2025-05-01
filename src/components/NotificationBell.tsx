@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "@/components/ui/use-toast"
 import { useNotificationsContext } from '@/context/NotificationsContext';
 import { cn, formatTimeToNow } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 export interface AppNotification {
   id: string;
@@ -41,6 +42,7 @@ const NotificationBell: React.FC = () => {
   const { notifications } = useNotificationsContext();
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -57,8 +59,20 @@ const NotificationBell: React.FC = () => {
   
   const handleNotificationClick = (notification: AppNotification) => {
     notifications.markAsRead(notification.id);
+    
+    // Show toast about the notification
+    toast({
+      title: notification.title,
+      description: notification.message,
+      variant: toastType[notification.type] as any,
+    });
+    
     if (notification.actionUrl) {
-      window.location.href = notification.actionUrl;
+      // Close the popover
+      setOpen(false);
+      
+      // Navigate to the action URL
+      navigate(notification.actionUrl);
     }
   };
   
@@ -105,11 +119,17 @@ const NotificationBell: React.FC = () => {
                   key={notification.id}
                   className={cn(
                     "group flex items-center space-x-2 py-2 border-b last:border-b-0",
-                    notification.read ? "opacity-60" : "font-semibold"
+                    notification.read ? "opacity-60" : "font-semibold",
+                    notification.actionUrl ? "cursor-pointer hover:bg-muted/50 rounded-md px-2" : ""
                   )}
                   onClick={() => handleNotificationClick(notification)}
                 >
-                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Icon className={cn("h-4 w-4 shrink-0", {
+                    "text-blue-500": notification.type === 'info',
+                    "text-green-500": notification.type === 'success',
+                    "text-yellow-500": notification.type === 'warning',
+                    "text-red-500": notification.type === 'error',
+                  })} />
                   <div className="flex flex-col space-y-1 leading-none">
                     <p className="text-sm">{notification.title}</p>
                     <p className="text-xs text-muted-foreground">

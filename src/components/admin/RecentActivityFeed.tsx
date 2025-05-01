@@ -1,14 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, CheckCircle, AlertCircle, Clock, Calendar, UserCircle2 } from 'lucide-react';
+import { Activity, CheckCircle, AlertCircle, Clock, Calendar, UserCircle2, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { api } from '@/services/api';
 import { useNotificationsContext } from '@/context/NotificationsContext';
+import { toast } from 'sonner';
 
 export interface ActivityItem {
   id: string;
-  type: 'evaluation_complete' | 'outreach_success' | 'booking_confirmed' | 'system_alert' | 'user_registered' | 'user_login';
+  type: 'evaluation_complete' | 'outreach_success' | 'booking_confirmed' | 'system_alert' | 'user_registered' | 'user_login' | 'user_inquiry';
   message: string;
   timestamp: string;
   read: boolean;
@@ -34,15 +36,18 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
     
     // Listen for real-time user events and activities
     const unsubscribe = api.subscribeToUserUpdates((data) => {
-      if (data.type === 'USER_CREATED') {
+      if (data.type === 'USER_CREATED' || data.type === 'USERS_UPDATED' && data.newUser) {
+        const user = data.user || data.newUser;
+        if (!user) return;
+        
         const newActivity: ActivityItem = {
           id: `user-${Date.now()}`,
           type: 'user_registered',
-          message: `New user registered: ${data.user?.name || 'Unknown'}`,
+          message: `New user registered: ${user.name || 'Unknown'}`,
           timestamp: new Date().toISOString(),
           read: false,
-          userId: data.user?.id,
-          userName: data.user?.name
+          userId: user.id,
+          userName: user.name
         };
         
         setActivities(prev => [newActivity, ...prev]);
@@ -50,8 +55,8 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
         // Also create a notification
         notifications.addNotification(
           'New User Registration', 
-          `${data.user?.name || 'Someone new'} just created an account!`,
-          { type: 'info', showToast: true }
+          `${user.name || 'Someone new'} just created an account!`,
+          { type: 'info', showToast: true, actionUrl: `/admin/users/${user.id}` }
         );
       }
       
@@ -76,7 +81,7 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
         const newActivity: ActivityItem = {
           id: `order-${Date.now()}`,
           type: 'booking_confirmed',
-          message: `New order placed${data.order?.userId ? ` by ${data.order.userId}` : ''}`,
+          message: `New order placed${data.order?.userId ? ` by user ${data.order.userId}` : ''}`,
           timestamp: new Date().toISOString(),
           read: false,
           userId: data.order?.userId
@@ -87,28 +92,118 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
         // Create notification
         notifications.addNotification(
           'New Order Placed', 
-          `A new property evaluation order has been placed${data.order?.userId ? ` by ${data.order.userId}` : ''}`,
-          { type: 'success', showToast: true }
+          `A new property evaluation order has been placed${data.order?.properties ? ` for ${data.order.properties.length} properties` : ''}`,
+          { 
+            type: 'success', 
+            showToast: true,
+            actionUrl: data.order ? `/admin/orders/${data.order.id}` : '/admin/orders'
+          }
         );
       }
       
-      if (data.type === 'ORDER_UPDATED' && data.order?.status === 'Report Ready') {
+      if (data.type === 'ORDER_UPDATED' && data.status === 'Report Ready') {
         const newActivity: ActivityItem = {
           id: `order-complete-${Date.now()}`,
           type: 'evaluation_complete',
-          message: `Evaluation completed${data.order?.userId ? ` for ${data.order.userId}` : ''}`,
+          message: `Evaluation completed for order ${data.orderId?.substring(0, 8) || 'Unknown'}`,
           timestamp: new Date().toISOString(),
           read: false,
           userId: data.order?.userId
         };
         
         setActivities(prev => [newActivity, ...prev]);
+        
+        // Create notification
+        notifications.addNotification(
+          'Evaluation Complete', 
+          `Order #${data.orderId?.substring(0, 8) || 'Unknown'} evaluation has been completed`,
+          {
+            type: 'success',
+            showToast: true,
+            actionUrl: data.orderId ? `/admin/orders/${data.orderId}` : '/admin/orders'
+          }
+        );
+      }
+      
+      if (data.type === 'REPORT_CREATED') {
+        const newActivity: ActivityItem = {
+          id: `report-${Date.now()}`,
+          type: 'evaluation_complete',
+          message: `New report generated for order ${data.report?.orderId?.substring(0, 8) || 'Unknown'}`,
+          timestamp: new Date().toISOString(),
+          read: false
+        };
+        
+        setActivities(prev => [newActivity, ...prev]);
       }
     });
+    
+    // Create user inquiry handler (simulated)
+    const simulateUserInquiry = () => {
+      // Simulate a random user inquiry every 5-10 minutes (purely for demo purposes)
+      const randomTime = Math.floor(Math.random() * (600000 - 300000) + 300000);
+      
+      setTimeout(() => {
+        // Only create inquiry if we have activities (to avoid spam in empty systems)
+        if (activities.length > 0) {
+          const inquiryTypes = [
+            'pricing question',
+            'evaluation process',
+            'billing support',
+            'technical issue',
+            'service availability'
+          ];
+          
+          const randomInquiryType = inquiryTypes[Math.floor(Math.random() * inquiryTypes.length)];
+          
+          // Get a random user from existing activities
+          const usersInActivities = activities
+            .filter(a => a.userName && a.userId)
+            .map(a => ({ name: a.userName!, id: a.userId! }));
+          
+          if (usersInActivities.length > 0) {
+            const randomUser = usersInActivities[Math.floor(Math.random() * usersInActivities.length)];
+            
+            const newActivity: ActivityItem = {
+              id: `inquiry-${Date.now()}`,
+              type: 'user_inquiry',
+              message: `User inquiry from ${randomUser.name}: ${randomInquiryType}`,
+              timestamp: new Date().toISOString(),
+              read: false,
+              userId: randomUser.id,
+              userName: randomUser.name
+            };
+            
+            setActivities(prev => [newActivity, ...prev]);
+            
+            // Create notification for admin
+            notifications.addNotification(
+              'New User Inquiry', 
+              `${randomUser.name} has a question about ${randomInquiryType}`,
+              { 
+                type: 'info', 
+                showToast: true,
+                actionUrl: `/admin/users/${randomUser.id}`
+              }
+            );
+            
+            // Display toast
+            toast.info(`New user inquiry received from ${randomUser.name}`);
+          }
+        }
+        
+        // Schedule next inquiry
+        simulateUserInquiry();
+      }, randomTime);
+    };
+    
+    // Start the simulation (for demo purposes only)
+    const inquiryTimer = setTimeout(simulateUserInquiry, 30000);
     
     return () => {
       unsubscribe();
       unsubscribeAdmin();
+      clearTimeout(inquiryTimer);
     };
   }, [initialActivities, notifications]);
 
@@ -123,6 +218,8 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
       case 'user_registered':
       case 'user_login':
         return <UserCircle2 className="h-4 w-4 text-indigo-500" />;
+      case 'user_inquiry':
+        return <Mail className="h-4 w-4 text-orange-500" />;
       case 'system_alert':
         return <AlertCircle className="h-4 w-4 text-amber-500" />;
       default:
@@ -143,14 +240,23 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
   };
 
   const handleActivityClick = (activity: ActivityItem) => {
+    // Mark activity as read
+    setActivities(prev => 
+      prev.map(a => 
+        a.id === activity.id ? { ...a, read: true } : a
+      )
+    );
+    
     // Navigate to appropriate detail page based on activity type
-    if (activity.userId && (activity.type === 'user_registered' || activity.type === 'user_login')) {
+    if (activity.userId && (activity.type === 'user_registered' || activity.type === 'user_login' || activity.type === 'user_inquiry')) {
       window.location.href = `/admin/users/${activity.userId}`;
-    } else if (activity.id.includes('order')) {
+    } else if (activity.id.includes('order') || activity.id.includes('report')) {
       // Extract order ID if available and navigate to order details
-      const orderId = activity.id.replace('order-', '').replace('order-complete-', '');
+      const orderId = activity.id.replace('order-', '').replace('order-complete-', '').replace('report-', '');
       if (!isNaN(Number(orderId))) {
         window.location.href = `/admin/orders/${orderId}`;
+      } else {
+        window.location.href = `/admin/orders`;
       }
     }
   };

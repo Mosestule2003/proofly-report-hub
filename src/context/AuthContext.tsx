@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/services/api';
+import notificationService from '@/utils/notificationService';
 
 export interface User {
   id: string;
@@ -77,71 +79,124 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Simulate API call delay
     await new Promise(r => setTimeout(r, 800));
     
-    // Find user with matching email (tenant only)
-    const foundUser = mockUsers.find(u => u.email === email && u.role === 'tenant');
-    
-    if (foundUser) {
-      // In a real app, we would verify the password
-      setUser(foundUser);
-      localStorage.setItem('proofly_user', JSON.stringify(foundUser));
-      toast.success(`Welcome back, ${foundUser.name}!`);
-      return true;
+    try {
+      // Fetch users from API to ensure we have the latest data
+      const allUsers = await api.getAllUsers();
+      
+      // Find user with matching email (tenant only)
+      const foundUser = allUsers.find(u => u.email === email && u.role === 'tenant');
+      
+      if (foundUser) {
+        // In a real app, we would verify the password
+        setUser(foundUser);
+        localStorage.setItem('proofly_user', JSON.stringify(foundUser));
+        toast.success(`Welcome back, ${foundUser.name}!`);
+        
+        // Create login notification
+        notificationService.broadcast({
+          title: 'User Login',
+          message: `${foundUser.name} has logged in`,
+          type: 'info',
+        });
+        
+        return true;
+      }
+      
+      toast.error("Invalid email or password");
+      return false;
+    } catch (error) {
+      console.error('Error during login:', error);
+      toast.error("Login failed. Please try again.");
+      return false;
     }
-    
-    toast.error("Invalid email or password");
-    return false;
   };
   
   const loginAdmin = async (email: string, password: string): Promise<boolean> => {
     // Simulate API call delay
     await new Promise(r => setTimeout(r, 800));
     
-    // Find admin user with matching email
-    const foundUser = mockUsers.find(u => u.email === email && u.role === 'admin');
-    
-    if (foundUser) {
-      // In a real app, we would verify the password
-      setUser(foundUser);
-      localStorage.setItem('proofly_user', JSON.stringify(foundUser));
-      toast.success(`Welcome back, ${foundUser.name}!`);
-      return true;
+    try {
+      // Fetch users from API to ensure we have the latest data
+      const allUsers = await api.getAllUsers();
+      
+      // Find admin user with matching email
+      const foundUser = allUsers.find(u => u.email === email && u.role === 'admin');
+      
+      if (foundUser) {
+        // In a real app, we would verify the password
+        setUser(foundUser);
+        localStorage.setItem('proofly_user', JSON.stringify(foundUser));
+        toast.success(`Welcome back, ${foundUser.name}!`);
+        
+        // Create admin login notification
+        notificationService.broadcast({
+          title: 'Admin Login',
+          message: `${foundUser.name} has logged in to admin panel`,
+          type: 'info',
+        });
+        
+        return true;
+      }
+      
+      toast.error("Invalid admin credentials");
+      return false;
+    } catch (error) {
+      console.error('Error during admin login:', error);
+      toast.error("Login failed. Please try again.");
+      return false;
     }
-    
-    toast.error("Invalid admin credentials");
-    return false;
   };
   
   const signup = async (name: string, email: string, password: string): Promise<boolean> => {
     // Simulate API call delay
     await new Promise(r => setTimeout(r, 1000));
     
-    // Check if email already exists
-    if (mockUsers.some(u => u.email === email)) {
-      toast.error("Email already in use");
+    try {
+      // Get all users to check if email already exists
+      const allUsers = await api.getAllUsers();
+      
+      // Check if email already exists
+      if (allUsers.some(u => u.email === email)) {
+        toast.error("Email already in use");
+        return false;
+      }
+      
+      // Create new user
+      const newUser: User = {
+        id: crypto.randomUUID(),
+        email,
+        name,
+        role: 'tenant',
+        createdAt: new Date().toISOString()
+      };
+      
+      // Add user through API
+      const createdUser = await api.createUser({
+        email,
+        name,
+        password,
+        role: 'tenant'
+      });
+      
+      // Log in the user
+      setUser(createdUser);
+      localStorage.setItem('proofly_user', JSON.stringify(createdUser));
+      toast.success("Account created successfully!");
+      
+      // Create new user notification for admins
+      notificationService.broadcast({
+        title: 'New User Registration',
+        message: `${name} has created an account`,
+        type: 'info',
+        actionUrl: `/admin/users/${createdUser.id}`
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error during signup:', error);
+      toast.error("Signup failed. Please try again.");
       return false;
     }
-    
-    // Create new user
-    const newUser: User = {
-      id: crypto.randomUUID(),
-      email,
-      name,
-      role: 'tenant',
-      createdAt: new Date().toISOString()
-    };
-    
-    // Add to mock users (in a real app, this would be stored in a database)
-    mockUsers.push(newUser);
-    
-    // Sync users with API
-    api.syncUsers(mockUsers);
-    
-    // Log in the user
-    setUser(newUser);
-    localStorage.setItem('proofly_user', JSON.stringify(newUser));
-    toast.success("Account created successfully!");
-    
-    return true;
   };
   
   const logout = () => {
