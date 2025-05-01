@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -19,6 +20,8 @@ import { Evaluator } from '@/components/EvaluatorProfile';
 import { ActivityItem } from '@/components/admin/RecentActivityFeed';
 import { generateDemoActivities } from '@/utils/demoActivityData';
 import { Order, OrderStatus } from '@/services/api';
+import { useNotificationsContext } from '@/context/NotificationsContext';
+import { toast } from 'sonner';
 
 // Adjusted interface to be compatible with Evaluator
 interface AdminMetricsType {
@@ -48,6 +51,7 @@ const Admin: React.FC = () => {
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const { notifications } = useNotificationsContext();
 
   useEffect(() => {
     // Check if mobile on mount and whenever window resizes
@@ -61,118 +65,137 @@ const Admin: React.FC = () => {
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
 
-  useEffect(() => {
-    // Load admin metrics
-    api.getAdminMetrics()
-      .then(data => {
-        setMetrics(data);
-      })
-      .catch(err => {
-        console.error("Failed to load admin metrics:", err);
-      });
-    
-    // Load orders for the pending orders widget and derive user activities
-    api.getOrders()
-      .then(orders => {
-        const pending = orders.filter(order => order.status === 'Pending' || 
-                                              order.status === 'Evaluator Assigned' || 
-                                              order.status === 'In Progress');
-        setPendingOrders(pending);
+  // Function to update metrics data
+  const updateMetricsData = async () => {
+    try {
+      const metricsData = await api.getAdminMetrics();
+      setMetrics(metricsData);
+      
+      // If we got new metrics data, create notification for significant changes
+      if (metrics && metricsData) {
+        if (metricsData.tenantCount > metrics.tenantCount) {
+          const newUsers = metricsData.tenantCount - metrics.tenantCount;
+          notifications.addNotification(
+            'New Users Registered',
+            `${newUsers} new user${newUsers > 1 ? 's' : ''} joined the platform`,
+            { type: 'info', showToast: true }
+          );
+        }
         
-        // Also set completed orders for ActivityCards
-        const completed = orders.filter(order => order.status === 'Report Ready');
-        setCompletedOrders(completed);
-        
-        // Generate activity items based on orders
-        const orderActivities: ActivityItem[] = orders.map(order => ({
-          id: `order-${order.id}`,
-          type: order.status === 'Report Ready' ? 'evaluation_complete' : 
-                'booking_confirmed',
-          message: `Order placed for ${order.properties[0]?.address?.split(',')[0] || 'Unknown location'}`,
-          timestamp: order.createdAt,
-          read: false,
-          userId: order.userId,
-          userName: order.userId // Using userId instead of tenantName
-        }));
-        
-        // Combine with demo activities
-        const demoActivities = generateDemoActivities();
-        setActivities([...orderActivities, ...demoActivities]);
-      })
-      .catch(err => {
-        console.error("Failed to load orders:", err);
-        // Fallback to demo activities if real data fails to load
-        setActivities(generateDemoActivities());
-      });
-    
-    // Load evaluators for the assignment widget
-    api.getAllEvaluators()
-      .then(data => {
-        setEvaluators(data);
-      })
-      .catch(err => {
-        console.error("Failed to load evaluators:", err);
-      });
-    
-    // Load sales data for charts
-    api.getSalesData()
-      .then(data => {
-        setSalesData(data);
-      })
-      .catch(err => {
-        console.error("Failed to load sales data:", err);
+        if (metricsData.completedOrderCount > metrics.completedOrderCount) {
+          const newCompleted = metricsData.completedOrderCount - metrics.completedOrderCount;
+          notifications.addNotification(
+            'Evaluations Completed',
+            `${newCompleted} new evaluation${newCompleted > 1 ? 's have' : ' has'} been completed`,
+            { type: 'success', showToast: true }
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load admin metrics:", err);
+      toast.error("Failed to load admin metrics");
+    }
+  };
+
+  // Function to update orders data
+  const updateOrdersData = async () => {
+    try {
+      const orders = await api.getOrders();
+      
+      // Process orders for different displays
+      const pending = orders.filter(order => 
+        order.status === 'Pending' || 
+        order.status === 'Evaluator Assigned' || 
+        order.status === 'In Progress'
+      );
+      setPendingOrders(pending);
+      
+      // Set completed orders for ActivityCards
+      const completed = orders.filter(order => order.status === 'Report Ready');
+      setCompletedOrders(completed);
+      
+      // Generate activity items based on orders
+      const orderActivities: ActivityItem[] = orders.map(order => ({
+        id: `order-${order.id}`,
+        type: order.status === 'Report Ready' ? 'evaluation_complete' : 
+              'booking_confirmed',
+        message: `Order placed for ${order.properties && order.properties[0]?.address?.split(',')[0] || 'Unknown location'}`,
+        timestamp: order.createdAt,
+        read: false,
+        userId: order.userId,
+        userName: order.userId // Using userId instead of tenantName
+      }));
+      
+      // Combine with other activities
+      const combinedActivities = [...orderActivities, ...generateDemoActivities()];
+      
+      // Sort by timestamp, most recent first
+      combinedActivities.sort((a, b) => {
+        const dateA = new Date(a.timestamp).getTime();
+        const dateB = new Date(b.timestamp).getTime();
+        return dateB - dateA;
       });
       
-    // Load transaction data for LastTransactions component
-    api.getTransactions()
-      .then(data => {
+      setActivities(combinedActivities);
+    } catch (err) {
+      console.error("Failed to load orders:", err);
+      toast.error("Failed to load orders");
+      // Fallback to demo activities if real data fails to load
+      setActivities(generateDemoActivities());
+    }
+  };
+
+  useEffect(() => {
+    // Initial data loading
+    const loadAdminData = async () => {
+      // Load admin metrics
+      await updateMetricsData();
+      
+      // Load orders data
+      await updateOrdersData();
+      
+      // Load evaluators for the assignment widget
+      try {
+        const data = await api.getAllEvaluators();
+        setEvaluators(data);
+      } catch (err) {
+        console.error("Failed to load evaluators:", err);
+        toast.error("Failed to load evaluators data");
+      }
+      
+      // Load sales data for charts
+      try {
+        const data = await api.getSalesData();
+        setSalesData(data);
+      } catch (err) {
+        console.error("Failed to load sales data:", err);
+        toast.error("Failed to load sales data");
+      }
+      
+      // Load transaction data
+      try {
+        const data = await api.getTransactions();
         setTransactions(data);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error("Failed to load transactions:", err);
-      });
+        toast.error("Failed to load transactions data");
+      }
+      
+      // Ensure we see all orders (useful when admin logs in after new tenants create orders)
+      api.ensureOrdersVisibleToAdmin();
+    };
     
-    // Subscribe to admin updates
-    const unsubscribe = api.subscribeToAdminUpdates((data) => {
+    loadAdminData();
+    
+    // Set up subscriptions for real-time updates
+    const adminUpdateSubscription = api.subscribeToAdminUpdates((data) => {
       // Handle different update types
       if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED') {
-        // Refresh orders when there's an update
-        api.getOrders()
-          .then(orders => {
-            const pending = orders.filter(order => 
-              order.status === 'Pending' || 
-              order.status === 'Evaluator Assigned' || 
-              order.status === 'In Progress'
-            );
-            setPendingOrders(pending);
-            
-            // Update completed orders
-            const completed = orders.filter(order => 
-              order.status === 'Report Ready'
-            );
-            setCompletedOrders(completed);
-            
-            // Update activities
-            const orderActivities: ActivityItem[] = orders.map(order => ({
-              id: `order-${order.id}`,
-              type: order.status === 'Report Ready' ? 'evaluation_complete' : 'booking_confirmed',
-              message: `Order placed for ${order.properties[0]?.address?.split(',')[0] || 'Unknown location'}`,
-              timestamp: order.createdAt,
-              read: false,
-              userId: order.userId,
-              userName: order.userId 
-            }));
-            
-            // Keep existing demo activities
-            const demoActivities = activities.filter(
-              activity => !activity.id.startsWith('order-')
-            );
-            setActivities([...orderActivities, ...demoActivities]);
-          })
-          .catch(err => {
-            console.error("Failed to refresh orders:", err);
-          });
+        updateOrdersData();
+        updateMetricsData();
       } else if (data.type === 'USER_CREATED' || data.type === 'USER_UPDATED') {
+        updateMetricsData();
+        
         // Add user registration/update activity
         const userActivity: ActivityItem = {
           id: `user-${Date.now()}`,
@@ -185,30 +208,41 @@ const Admin: React.FC = () => {
         };
         
         setActivities(prev => [userActivity, ...prev]);
+        
+        // Create notification
+        notifications.addNotification(
+          'New User Registration',
+          `${data.user?.name || 'Someone new'} just created an account!`,
+          { type: 'info', showToast: true }
+        );
+      } else if (data.type === 'SALES_UPDATED') {
+        setSalesData(data.sales);
       }
     });
     
-    // Ensure we see all orders (useful when admin logs in after new tenants create orders)
-    api.ensureOrdersVisibleToAdmin();
-    
     // Cleanup subscription on unmount
     return () => {
-      unsubscribe();
+      adminUpdateSubscription();
     };
-  }, []);
+  }, [notifications]);
 
   // Handle assigning evaluator to order
   const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
       await api.updateOrderStatus(orderId, newStatus);
+      
+      // Create notification for status update
+      notifications.addNotification(
+        'Order Status Updated',
+        `Order #${orderId} status changed to ${newStatus}`,
+        { type: 'success', showToast: true }
+      );
+      
       // Refresh pending orders
-      const allOrders = await api.getOrders();
-      const pending = allOrders.filter(order => order.status === 'Pending' || 
-                                              order.status === 'Evaluator Assigned' || 
-                                              order.status === 'In Progress');
-      setPendingOrders(pending);
+      updateOrdersData();
     } catch (err) {
       console.error("Failed to update order status:", err);
+      toast.error("Failed to update order status");
     }
   };
 

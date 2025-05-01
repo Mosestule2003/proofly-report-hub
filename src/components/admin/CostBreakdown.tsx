@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -9,6 +10,7 @@ import {
   Tooltip
 } from 'recharts';
 import { api } from '@/services/api';
+import { useNotificationsContext } from '@/context/NotificationsContext';
 
 interface CostData {
   name: string;
@@ -24,6 +26,7 @@ const CostBreakdown: React.FC = () => {
     { name: 'Server Cost', value: 15 },
     { name: 'Savings', value: 20 },
   ]);
+  const { notifications } = useNotificationsContext();
   
   useEffect(() => {
     // Attempt to load real cost breakdown data from API
@@ -41,12 +44,23 @@ const CostBreakdown: React.FC = () => {
           const serverCost = Math.round((totalRevenue * 0.1) / totalRevenue * 100);
           const savings = Math.round((totalRevenue * 0.1) / totalRevenue * 100);
           
-          setData([
+          const newData = [
             { name: 'Evaluator Payouts', value: evaluatorPayouts },
             { name: 'Software Ops', value: softwareOps },
             { name: 'Server Cost', value: serverCost },
             { name: 'Savings', value: savings },
-          ]);
+          ];
+          
+          setData(newData);
+          
+          // Check if savings percentage is less than 15% and notify
+          if (savings < 15 && totalRevenue > 1000) {
+            notifications.addNotification(
+              'Cost Alert',
+              'Savings percentage has dropped below 15% of revenue',
+              { type: 'warning', showToast: true }
+            );
+          }
         }
       } catch (error) {
         console.error('Error loading cost data:', error);
@@ -55,7 +69,18 @@ const CostBreakdown: React.FC = () => {
     };
     
     loadCostData();
-  }, []);
+    
+    // Subscribe to updates that might affect costs
+    const unsubscribe = api.subscribeToAdminUpdates((data) => {
+      if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED') {
+        loadCostData();
+      }
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [notifications]);
 
   return (
     <Card>
@@ -76,9 +101,17 @@ const CostBreakdown: React.FC = () => {
               dataKey="value"
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               labelLine={false}
+              onClick={(entry) => {
+                // Make cost breakdown items interactive
+                window.location.href = `/admin/finances/${entry.name.toLowerCase().replace(' ', '-')}`;
+              }}
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={COLORS[index % COLORS.length]}
+                  style={{ cursor: 'pointer' }}
+                />
               ))}
             </Pie>
             <Tooltip formatter={(value) => [`${value}%`, 'Allocation']} />

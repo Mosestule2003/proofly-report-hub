@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CheckCircle, AlertCircle, Clock, Calendar, UserCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { api } from '@/services/api';
+import { useNotificationsContext } from '@/context/NotificationsContext';
 
 export interface ActivityItem {
   id: string;
@@ -21,9 +23,96 @@ interface RecentActivityFeedProps {
 }
 
 const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({ 
-  activities,
+  activities: initialActivities,
   className 
 }) => {
+  const [activities, setActivities] = useState<ActivityItem[]>(initialActivities);
+  const { notifications } = useNotificationsContext();
+  
+  useEffect(() => {
+    // Combine initial activities with any new ones
+    setActivities(initialActivities);
+    
+    // Listen for real-time user events and activities
+    const unsubscribe = api.subscribeToUserUpdates((data) => {
+      if (data.type === 'USER_CREATED') {
+        const newActivity: ActivityItem = {
+          id: `user-${Date.now()}`,
+          type: 'user_registered',
+          message: `New user registered: ${data.user?.name || 'Unknown'}`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          userId: data.user?.id,
+          userName: data.user?.name
+        };
+        
+        setActivities(prev => [newActivity, ...prev]);
+        
+        // Also create a notification
+        notifications.addNotification(
+          'New User Registration', 
+          `${data.user?.name || 'Someone new'} just created an account!`,
+          { type: 'info', showToast: true }
+        );
+      }
+      
+      if (data.type === 'USER_UPDATED') {
+        const newActivity: ActivityItem = {
+          id: `user-update-${Date.now()}`,
+          type: 'user_login',
+          message: `User profile updated: ${data.user?.name || 'Unknown'}`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          userId: data.user?.id,
+          userName: data.user?.name
+        };
+        
+        setActivities(prev => [newActivity, ...prev]);
+      }
+    });
+    
+    // Listen for order related events
+    const unsubscribeOrders = api.subscribeToOrderUpdates((data) => {
+      if (data.type === 'ORDER_CREATED') {
+        const newActivity: ActivityItem = {
+          id: `order-${Date.now()}`,
+          type: 'booking_confirmed',
+          message: `New order placed${data.order?.userId ? ` by ${data.order.userId}` : ''}`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          userId: data.order?.userId
+        };
+        
+        setActivities(prev => [newActivity, ...prev]);
+        
+        // Create notification
+        notifications.addNotification(
+          'New Order Placed', 
+          `A new property evaluation order has been placed${data.order?.userId ? ` by ${data.order.userId}` : ''}`,
+          { type: 'success', showToast: true }
+        );
+      }
+      
+      if (data.type === 'ORDER_UPDATED' && data.order?.status === 'Report Ready') {
+        const newActivity: ActivityItem = {
+          id: `order-complete-${Date.now()}`,
+          type: 'evaluation_complete',
+          message: `Evaluation completed${data.order?.userId ? ` for ${data.order.userId}` : ''}`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          userId: data.order?.userId
+        };
+        
+        setActivities(prev => [newActivity, ...prev]);
+      }
+    });
+    
+    return () => {
+      unsubscribe();
+      unsubscribeOrders();
+    };
+  }, [initialActivities, notifications]);
+
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
       case 'evaluation_complete':
@@ -53,6 +142,19 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
       return timestamp;
     }
   };
+
+  const handleActivityClick = (activity: ActivityItem) => {
+    // Navigate to appropriate detail page based on activity type
+    if (activity.userId && (activity.type === 'user_registered' || activity.type === 'user_login')) {
+      window.location.href = `/admin/users/${activity.userId}`;
+    } else if (activity.id.includes('order')) {
+      // Extract order ID if available and navigate to order details
+      const orderId = activity.id.replace('order-', '').replace('order-complete-', '');
+      if (!isNaN(Number(orderId))) {
+        window.location.href = `/admin/orders/${orderId}`;
+      }
+    }
+  };
   
   return (
     <Card className={cn('overflow-hidden', className)}>
@@ -71,9 +173,11 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
                 <li 
                   key={activity.id}
                   className={cn(
-                    "flex items-start gap-2 p-2 rounded-md",
-                    activity.read ? "opacity-70" : "bg-muted/30"
+                    "flex items-start gap-2 p-2 rounded-md cursor-pointer",
+                    activity.read ? "opacity-70" : "bg-muted/30",
+                    "hover:bg-muted transition-colors"
                   )}
+                  onClick={() => handleActivityClick(activity)}
                 >
                   <div className="mt-0.5 flex-shrink-0">
                     {getActivityIcon(activity.type)}
@@ -91,7 +195,7 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
           )}
         </div>
         <div className="text-center border-t py-2">
-          <a href="#" className="text-xs text-primary hover:underline">View All</a>
+          <a href="/admin/activity" className="text-xs text-primary hover:underline">View All</a>
         </div>
       </CardContent>
     </Card>
