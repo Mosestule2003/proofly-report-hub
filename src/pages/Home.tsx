@@ -1,4 +1,5 @@
-import React, { useState, FormEvent, useRef, useEffect } from 'react';
+
+import React, { useState, FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
@@ -6,14 +7,9 @@ import { Search, Building, ShieldCheck, Phone, MapPin, Loader2, CloudRain } from
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { useLoadScript, Libraries } from '@react-google-maps/api';
 import { toast } from 'sonner';
-import { Textarea } from '@/components/ui/textarea';
-import ProoflyRoadmap from '@/components/ProoflyRoadmap';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
-
-// Define libraries correctly for TypeScript
-const libraries: Libraries = ['places'];
+import ProoflyRoadmap from '@/components/ProoflyRoadmap';
 
 const Home: React.FC = () => {
   const { addProperty } = useCart();
@@ -24,18 +20,11 @@ const Home: React.FC = () => {
   const [agentPhone, setAgentPhone] = useState('');
   const [agentCompany, setAgentCompany] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showAgentFields, setShowAgentFields] = useState(true); // Always shown by default
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null);
   const [weatherMultiplier, setWeatherMultiplier] = useState<number>(1.0);
   const [isValidAddress, setIsValidAddress] = useState(false);
   
-  // Load Google Maps API
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: "AIzaSyBx6uFvT7K52tRTTHZ9OmSh8WPimMShU58", // This should be replaced with your actual API key
-    libraries,
-  });
-
   // Simulate weather check
   const simulateWeatherCheck = (lat: number, lng: number) => {
     // In a real implementation, this would call a weather API
@@ -68,7 +57,7 @@ const Home: React.FC = () => {
       simulateWeatherCheck(coords.lat, coords.lng);
     } else {
       setIsValidAddress(true); // Still mark as valid even without coords
-      setCoordinates(null);
+      setCoordinates({ lat: 34.0522, lng: -118.2437 }); // Default coordinates
     }
   };
 
@@ -121,20 +110,18 @@ const Home: React.FC = () => {
       newErrors.property = "Property address is required";
     }
     
-    if (showAgentFields) {
-      if (!agentName.trim()) {
-        newErrors.agentName = "Agent/landlord name is required";
-      }
-      
-      if (!agentEmail.trim()) {
-        newErrors.agentEmail = "Email is required";
-      } else if (!/\S+@\S+\.\S+/.test(agentEmail)) {
-        newErrors.agentEmail = "Email is invalid";
-      }
-      
-      if (!agentPhone.trim()) {
-        newErrors.agentPhone = "Phone number is required";
-      }
+    if (!agentName.trim()) {
+      newErrors.agentName = "Agent/landlord name is required";
+    }
+    
+    if (!agentEmail.trim()) {
+      newErrors.agentEmail = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(agentEmail)) {
+      newErrors.agentEmail = "Email is invalid";
+    }
+    
+    if (!agentPhone.trim()) {
+      newErrors.agentPhone = "Phone number is required";
     }
     
     setErrors(newErrors);
@@ -146,14 +133,9 @@ const Home: React.FC = () => {
     
     if (!validateForm()) return;
     
-    if (!isValidAddress) {
-      toast.error("Please enter a valid address");
-      return;
-    }
-    
     setIsLoading(true);
     
-    // Collect landlord info since it's required now
+    // Collect landlord info since it's required
     const landlordInfo = {
       name: agentName,
       email: agentEmail,
@@ -165,13 +147,16 @@ const Home: React.FC = () => {
       // Simulate processing delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
+      // Ensure we have coordinates
+      const propertyCoordinates = coordinates || { lat: 34.0522, lng: -118.2437 };
+      
       addProperty({
         id: crypto.randomUUID(),
         address: propertyInput,
         description: '',
         price: 25, // Base price - will be recalculated in CartContext
         landlordInfo, // Always include landlord info
-        coordinates: coordinates || { lat: 34.0522, lng: -118.2437 }, // Fallback coordinates if needed
+        coordinates: propertyCoordinates, // Use coordinates or fallback
         pricing: {
           baseFee: 25,
           distanceSurcharge: 0, // Will be calculated in CartContext
@@ -205,16 +190,6 @@ const Home: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  // Handle errors with Maps API loading
-  useEffect(() => {
-    if (loadError) {
-      console.error("Google Maps API failed to load:", loadError);
-      toast.warning("Address autocomplete unavailable", {
-        description: "You can still enter an address manually"
-      });
-    }
-  }, [loadError]);
   
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
@@ -242,7 +217,7 @@ const Home: React.FC = () => {
                   
                   <AddressAutocomplete
                     id="property"
-                    placeholder="Start typing an address..."
+                    placeholder="Enter a complete property address"
                     value={propertyInput}
                     onChange={(value) => {
                       setPropertyInput(value);
@@ -352,14 +327,7 @@ const Home: React.FC = () => {
                 type="submit" 
                 size="lg" 
                 className="mt-6 w-full"
-                disabled={
-                  isLoading || 
-                  !propertyInput.trim() || 
-                  !isValidAddress ||
-                  !agentName.trim() || 
-                  !agentEmail.trim() || 
-                  !agentPhone.trim()
-                }
+                disabled={isLoading || !propertyInput.trim() || !agentName.trim() || !agentEmail.trim() || !agentPhone.trim()}
               >
                 {isLoading ? (
                   <>
@@ -371,7 +339,7 @@ const Home: React.FC = () => {
                 )}
               </Button>
               
-              {isValidAddress && (
+              {propertyInput && (
                 <div className="mt-2 text-center text-xs text-muted-foreground">
                   Base fee: $25 {weatherMultiplier > 1 ? `• Weather adjustment: ${weatherMultiplier}×` : ''}
                 </div>
