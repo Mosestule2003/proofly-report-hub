@@ -34,19 +34,36 @@ const CheckoutSuccess: React.FC = () => {
     loadOrder();
   }, [orderId]);
   
-  const handleProcessingComplete = () => {
+  const handleProcessingComplete = async () => {
     setShowProcessing(false);
     
     // Update order status to "Report Ready" (simulated)
-    if (order) {
-      api.updateOrderStatus(order.id, 'Report Ready')
-        .then(() => {
-          // In a real app, the WebSocket would push this update
-          console.log('Order status updated to Report Ready');
-        })
-        .catch(err => {
-          console.error('Error updating order status:', err);
-        });
+    if (order && orderId) {
+      try {
+        // Update the order to Report Ready status
+        await api.updateOrderStatus(orderId, 'Report Ready');
+        
+        // Create a simple mock report for this order
+        const mockReport = {
+          orderId: orderId,
+          comments: "This is an automatically generated report based on the property evaluation.\n\nThe property appears to be in good condition overall. Location is convenient with access to public transportation and amenities. Interior space is well maintained with updated fixtures. Some minor cosmetic issues were noted but nothing structural or concerning.",
+          imageUrl: "https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?w=1200",
+          videoUrl: "https://example.com/property-video.mp4", 
+          createdAt: new Date().toISOString()
+        };
+        
+        await api.createReportForOrder(orderId, mockReport);
+        
+        // Refresh order data to show the updated status
+        const updatedOrder = await api.getOrderById(orderId);
+        if (updatedOrder) {
+          setOrder(updatedOrder);
+        }
+        
+        console.log('Order updated and report created successfully');
+      } catch (err) {
+        console.error('Error updating order status:', err);
+      }
     }
   };
   
@@ -119,15 +136,15 @@ const CheckoutSuccess: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Order ID</p>
-                  <p className="font-medium">{order.id.substring(0, 8)}</p>
+                  <p className="font-medium">{order?.id.substring(0, 8)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Properties</p>
-                  <p className="font-medium">{order.properties.length}</p>
+                  <p className="font-medium">{order?.properties.length}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Price</p>
-                  <p className="font-medium">${order.totalPrice.toFixed(2)}</p>
+                  <p className="font-medium">${order?.totalPrice.toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>

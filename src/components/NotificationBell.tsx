@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCircle, Info, X, AlertTriangle } from 'lucide-react';
 import { 
@@ -71,6 +72,11 @@ const NotificationBell: React.FC = () => {
           ref={buttonRef}
         >
           <Bell className="h-5 w-5" />
+          {notifications.unreadCount > 0 && (
+            <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-white text-xs flex items-center justify-center">
+              {notifications.unreadCount}
+            </div>
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent 
@@ -101,6 +107,7 @@ const NotificationBell: React.FC = () => {
                     "group flex items-center space-x-2 py-2 border-b last:border-b-0",
                     notification.read ? "opacity-60" : "font-semibold"
                   )}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="flex flex-col space-y-1 leading-none">
@@ -116,7 +123,10 @@ const NotificationBell: React.FC = () => {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      onClick={() => notifications.deleteNotification(notification.id)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the parent click handler
+                        notifications.deleteNotification(notification.id);
+                      }}
                     >
                       <X className="h-4 w-4" />
                     </Button>
