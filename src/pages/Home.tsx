@@ -44,46 +44,51 @@ const Home: React.FC = () => {
   useEffect(() => {
     if (!isLoaded || !inputRef.current) return;
     
-    // Initialize autocomplete
-    autoCompleteRef.current = new google.maps.places.Autocomplete(
-      inputRef.current, 
-      { 
-        types: ['address'],
-        componentRestrictions: { country: 'us' } 
-      }
-    );
-    
-    // Add place_changed listener
-    autoCompleteRef.current.addListener('place_changed', () => {
-      const place = autoCompleteRef.current?.getPlace();
-      
-      if (place && place.formatted_address) {
-        setPropertyInput(place.formatted_address);
-        setFormattedAddress(place.formatted_address);
-        validateField('property', place.formatted_address);
-        
-        // Store latitude and longitude if available
-        if (place.geometry && place.geometry.location) {
-          const lat = place.geometry.location.lat();
-          const lng = place.geometry.location.lng();
-          setCoordinates({ lat, lng });
-          setIsValidAddress(true);
-          
-          // Simulate fetching weather data
-          simulateWeatherCheck(lat, lng);
-        } else {
-          setCoordinates(null);
-          setIsValidAddress(false);
+    try {
+      // Initialize autocomplete
+      autoCompleteRef.current = new google.maps.places.Autocomplete(
+        inputRef.current, 
+        { 
+          types: ['address'],
+          componentRestrictions: { country: 'us' } 
         }
-      }
-    });
-    
-    return () => {
-      // Clean up listener when component unmounts
-      if (autoCompleteRef.current) {
-        google.maps.event.clearInstanceListeners(autoCompleteRef.current);
-      }
-    };
+      );
+      
+      // Add place_changed listener
+      const listener = autoCompleteRef.current.addListener('place_changed', () => {
+        const place = autoCompleteRef.current?.getPlace();
+        
+        if (place && place.formatted_address) {
+          setPropertyInput(place.formatted_address);
+          setFormattedAddress(place.formatted_address);
+          validateField('property', place.formatted_address);
+          
+          // Store latitude and longitude if available
+          if (place.geometry && place.geometry.location) {
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+            setCoordinates({ lat, lng });
+            setIsValidAddress(true);
+            
+            // Simulate fetching weather data
+            simulateWeatherCheck(lat, lng);
+          } else {
+            setCoordinates(null);
+            setIsValidAddress(false);
+          }
+        }
+      });
+      
+      return () => {
+        // Clean up listener when component unmounts
+        if (autoCompleteRef.current) {
+          google.maps.event.clearListeners(autoCompleteRef.current, 'place_changed');
+        }
+      };
+    } catch (error) {
+      console.error("Error initializing Google Maps autocomplete:", error);
+      // If there's an error, we won't disable the input field
+    }
   }, [isLoaded]);
 
   // Simulate weather check
