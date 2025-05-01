@@ -88,6 +88,9 @@ const CheckoutSuccess: React.FC = () => {
     price: prop.price || 30,
     landlordInfo: prop.landlordInfo // Ensure landlord info is included for outreach
   })) as Property[] || [];
+
+  // Calculate the total price for the properties
+  const totalPrice = order?.totalPrice || propertiesWithIds.reduce((sum, prop) => sum + prop.price, 0);
   
   return (
     <>
@@ -95,6 +98,7 @@ const CheckoutSuccess: React.FC = () => {
         <OrderProcessingModal 
           properties={propertiesWithIds} 
           onComplete={handleProcessingComplete} 
+          totalPrice={totalPrice}
         />
       )}
       
