@@ -44,6 +44,7 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
           
           // Get all users from the API
           const allUsers = await api.getAllUsers();
+          console.log("UsersList component: Retrieved users:", allUsers);
           
           // Make sure we cast the API response to our local User interface
           const typedUsers = allUsers as User[];
@@ -92,7 +93,7 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
             `${data.newUser.name} (${data.newUser.email}) has created a new account.`,
             {
               type: 'info',
-              showToast: true,
+              showToast: false,
               actionUrl: `/admin/users/${data.newUser.id}`
             }
           );
@@ -121,7 +122,7 @@ const UsersList: React.FC<UsersListProps> = ({ className }) => {
       notifications.addNotification(
         'User Deleted', 
         `User ${userToDelete.name} has been deleted from the system.`,
-        { type: 'warning', showToast: true }
+        { type: 'warning', showToast: false }
       );
     } catch (error) {
       console.error('Error deleting user:', error);
