@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCircle, Info, X, AlertTriangle } from 'lucide-react';
 import { 
@@ -72,11 +71,6 @@ const NotificationBell: React.FC = () => {
           ref={buttonRef}
         >
           <Bell className="h-5 w-5" />
-          {notifications.unreadCount > 0 && (
-            <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-white text-xs flex items-center justify-center">
-              {notifications.unreadCount}
-            </div>
-          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent 

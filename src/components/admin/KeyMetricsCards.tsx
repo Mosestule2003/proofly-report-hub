@@ -12,8 +12,6 @@ interface Order {
   propertyAddress?: string;
   date?: string;
   status: string;
-  amount?: number; // Optional amount field
-  rating?: number;
   userId: string;
   properties: any[];
   totalPrice: number;
@@ -61,14 +59,7 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [] }) => {
           acc + (Array.isArray(order.properties) ? order.properties.length : 0), 0);
         
         const totalRevenue = allOrders.reduce((acc, order) => {
-          // Check for either totalPrice or amount property
-          let orderValue = 0;
-          if (typeof order.totalPrice === 'number') {
-            orderValue = order.totalPrice;
-          } else if (order.amount && typeof order.amount === 'number') {
-            orderValue = order.amount;
-          }
-          return acc + orderValue;
+          return acc + order.totalPrice;
         }, 0);
         
         // Simulate previous period (for demo, using 80-90% of current values)
