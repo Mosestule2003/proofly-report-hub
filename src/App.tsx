@@ -19,9 +19,11 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import AdminUsers from "./pages/AdminUsers";
 import AdminOrders from "./pages/AdminOrders";
-import AdminUserDetail from "./pages/AdminUserDetail"; // New import
+import AdminUserDetail from "./pages/AdminUserDetail";
 import AdminLogin from "./pages/AdminLogin";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
+import CheckoutProcessing from "./pages/CheckoutProcessing"; // New import
+import PaymentPage from "./pages/PaymentPage"; // New import
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,13 +52,15 @@ const App = () => (
                     <Route element={<ProtectedRoute allowedRoles={['tenant']} redirectPath="/login" />}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/cart" element={<Cart />} />
+                      <Route path="/payment" element={<PaymentPage />} />
+                      <Route path="/checkout/processing" element={<CheckoutProcessing />} />
                     </Route>
                     
                     {/* Admin-only routes */}
                     <Route element={<ProtectedRoute allowedRoles={['admin']} redirectPath="/admin/login" />}>
                       <Route path="/admin" element={<Admin />} />
                       <Route path="/admin/users" element={<AdminUsers />} />
-                      <Route path="/admin/users/:userId" element={<AdminUserDetail />} /> {/* New route */}
+                      <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
                       <Route path="/admin/orders" element={<AdminOrders />} />
                     </Route>
                     

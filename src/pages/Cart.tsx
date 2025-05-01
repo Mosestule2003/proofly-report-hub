@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+
 const Cart: React.FC = () => {
   const navigate = useNavigate();
   const {
@@ -53,6 +54,7 @@ const Cart: React.FC = () => {
       }
     }
   }, [editingPropertyId, properties]);
+
   const handleCheckout = async () => {
     if (!isAuthenticated) {
       toast.warning("Please log in to complete checkout", {
@@ -68,34 +70,11 @@ const Cart: React.FC = () => {
       toast.error("Please provide landlord information for all properties");
       return;
     }
-    if (!user) {
-      toast.error("User session error");
-      return;
-    }
-    setIsProcessing(true);
-    try {
-      // Calculate totals
-      const totalPrice = getTotalPrice();
-      const discount = getDiscount();
-
-      // Create order
-      const order = await api.createOrder(user.id, properties, totalPrice, discount);
-      toast.success("Order created successfully!", {
-        description: `Order #${order.id.substring(0, 8)} is being processed.`
-      });
-
-      // Clear cart and navigate to success page
-      clearCart();
-      navigate(`/checkout/success/${order.id}`);
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error("Failed to process checkout", {
-        description: "Please try again later."
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+    
+    // Navigate to payment page instead of direct checkout
+    navigate('/payment');
   };
+
   const handleEditLandlord = (propertyId: string) => {
     setEditingPropertyId(propertyId);
   };
@@ -111,6 +90,7 @@ const Cart: React.FC = () => {
     setEditingPropertyId(null);
     toast.success("Landlord information saved");
   };
+
   if (properties.length === 0) {
     return <div className="container max-w-4xl py-12">
         <h1 className="text-3xl font-bold mb-6">Your Cart</h1>
@@ -243,8 +223,13 @@ const Cart: React.FC = () => {
                   </div>
                 </div>}
               
-              <Button size="lg" disabled={isProcessing || !allPropertiesHaveLandlordInfo || !isAuthenticated} onClick={handleCheckout} className="w-full mt-6, When I click on thsi button I want the next page tobe a payemnt options requiremnt page werethe usrr provided thier card details as well. After the payment page then the simulation start after the user clicks on proceed with payment button in the payment page(A loading page runs then a succes payment info then the simulation starts). \n ">
-                {isProcessing ? "Processing..." : "Proceed to Checkout"}
+              <Button 
+                size="lg" 
+                disabled={isProcessing || !allPropertiesHaveLandlordInfo || !isAuthenticated} 
+                onClick={handleCheckout} 
+                className="w-full mt-6"
+              >
+                {isProcessing ? "Processing..." : "Proceed to Payment"}
               </Button>
               
               {!isAuthenticated && <p className="text-center text-sm text-muted-foreground mt-4">
@@ -318,4 +303,5 @@ const Cart: React.FC = () => {
       </Dialog>
     </div>;
 };
+
 export default Cart;
