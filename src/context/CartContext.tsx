@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState } from 'react';
 import { AgentContact } from '@/services/api';
+import { calculateDistance } from '@/utils/distanceCalculator';
 
 export interface Property {
   id: string;
@@ -8,7 +9,17 @@ export interface Property {
   description: string;
   price: number;
   agentContact?: AgentContact;
-  landlordInfo: LandlordInfo; // Now required
+  landlordInfo: LandlordInfo;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  pricing?: {
+    baseFee: number;
+    distanceSurcharge: number;
+    weatherMultiplier: number;
+    finalPrice: number;
+  };
 }
 
 export interface LandlordInfo {
@@ -26,6 +37,9 @@ interface CartContextType {
   clearCart: () => void;
   getTotalPrice: () => number;
   getDiscount: () => number;
+  getBaseFeeTotal: () => number;
+  getDistanceSurchargeTotal: () => number;
+  getWeatherSurchargeTotal: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -39,18 +53,54 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       property.id = crypto.randomUUID();
     }
     
-    // Set default price if not provided
-    if (!property.price) {
-      property.price = 30; // Default price
+    // Calculate dynamic pricing
+    const baseFee = 25; // Base fee is $25
+    let distanceSurcharge = 0;
+    const weatherMultiplier = property.pricing?.weatherMultiplier || 1.0; // Default to 1.0 if not provided
+    
+    // Calculate distance surcharge if there's at least one existing property
+    if (properties.length > 0 && properties[0].coordinates && property.coordinates) {
+      const firstProperty = properties[0];
+      const distance = calculateDistance(
+        firstProperty.coordinates.lat,
+        firstProperty.coordinates.lng,
+        property.coordinates.lat,
+        property.coordinates.lng
+      );
+      
+      // Apply distance surcharge based on kilometers
+      if (distance > 30) {
+        distanceSurcharge = 15;
+      } else if (distance > 15) {
+        distanceSurcharge = 10;
+      } else if (distance > 5) {
+        distanceSurcharge = 5;
+      }
     }
     
+    // Calculate final price for this property
+    const finalPrice = (baseFee + distanceSurcharge) * weatherMultiplier;
+    
+    // Update the property with pricing details
+    const propertyWithPricing = {
+      ...property,
+      pricing: {
+        baseFee,
+        distanceSurcharge,
+        weatherMultiplier,
+        finalPrice
+      },
+      price: finalPrice
+    };
+    
     // Validate that landlord info is present
-    if (!property.landlordInfo || !property.landlordInfo.name || !property.landlordInfo.email || !property.landlordInfo.phone) {
+    if (!propertyWithPricing.landlordInfo || !propertyWithPricing.landlordInfo.name || 
+        !propertyWithPricing.landlordInfo.email || !propertyWithPricing.landlordInfo.phone) {
       console.error("Cannot add property without complete landlord information");
       return;
     }
     
-    setProperties([...properties, property]);
+    setProperties([...properties, propertyWithPricing]);
   };
   
   const removeProperty = (propertyId: string) => {
@@ -67,6 +117,23 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   
   const clearCart = () => {
     setProperties([]);
+  };
+  
+  const getBaseFeeTotal = (): number => {
+    return properties.reduce((total, prop) => total + (prop.pricing?.baseFee || 25), 0);
+  };
+  
+  const getDistanceSurchargeTotal = (): number => {
+    return properties.reduce((total, prop) => total + (prop.pricing?.distanceSurcharge || 0), 0);
+  };
+  
+  const getWeatherSurchargeTotal = (): number => {
+    return properties.reduce((total, prop) => {
+      const baseFee = prop.pricing?.baseFee || 25;
+      const distanceSurcharge = prop.pricing?.distanceSurcharge || 0;
+      const weatherMultiplier = prop.pricing?.weatherMultiplier || 1.0;
+      return total + ((baseFee + distanceSurcharge) * (weatherMultiplier - 1));
+    }, 0);
   };
   
   const getTotalPrice = (): number => {
@@ -86,7 +153,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     updatePropertyLandlord,
     clearCart,
     getTotalPrice,
-    getDiscount
+    getDiscount,
+    getBaseFeeTotal,
+    getDistanceSurchargeTotal,
+    getWeatherSurchargeTotal
   };
   
   return (

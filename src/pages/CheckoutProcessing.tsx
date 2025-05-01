@@ -7,12 +7,17 @@ import OrderProcessingModal from '@/components/OrderProcessingModal';
 
 const CheckoutProcessing: React.FC = () => {
   const navigate = useNavigate();
-  const { properties } = useCart();
+  const { properties, getTotalPrice, clearCart } = useCart();
 
   // Handle processing completion
   const handleProcessingComplete = () => {
     // Generate a random order ID for demo purposes
     const demoOrderId = crypto.randomUUID();
+    
+    // After the order processing is complete, we can clear the cart
+    // since the properties have been "processed"
+    clearCart();
+    
     navigate(`/checkout/success/${demoOrderId}`);
   };
 
@@ -27,6 +32,7 @@ const CheckoutProcessing: React.FC = () => {
     <OrderProcessingModal
       properties={properties}
       onComplete={handleProcessingComplete}
+      totalPrice={getTotalPrice()}
     />
   );
 };

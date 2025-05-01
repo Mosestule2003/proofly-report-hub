@@ -1,8 +1,9 @@
+
 import React, { useState, FormEvent, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
-import { Search, Building, ShieldCheck, Phone, MapPin, Loader2 } from 'lucide-react';
+import { Search, Building, ShieldCheck, Phone, MapPin, Loader2, CloudRain } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -26,6 +27,10 @@ const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showAgentFields, setShowAgentFields] = useState(true); // Always shown by default
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null);
+  const [weatherMultiplier, setWeatherMultiplier] = useState<number>(1.0);
+  const [isValidAddress, setIsValidAddress] = useState(false);
+  
   const autoCompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null); // Changed to HTMLInputElement
   
@@ -51,10 +56,25 @@ const Home: React.FC = () => {
     // Add place_changed listener
     autoCompleteRef.current.addListener('place_changed', () => {
       const place = autoCompleteRef.current?.getPlace();
+      
       if (place && place.formatted_address) {
         setPropertyInput(place.formatted_address);
         setFormattedAddress(place.formatted_address);
         validateField('property', place.formatted_address);
+        
+        // Store latitude and longitude if available
+        if (place.geometry && place.geometry.location) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          setCoordinates({ lat, lng });
+          setIsValidAddress(true);
+          
+          // Simulate fetching weather data
+          simulateWeatherCheck(lat, lng);
+        } else {
+          setCoordinates(null);
+          setIsValidAddress(false);
+        }
       }
     });
     
@@ -65,6 +85,26 @@ const Home: React.FC = () => {
       }
     };
   }, [isLoaded]);
+
+  // Simulate weather check
+  const simulateWeatherCheck = (lat: number, lng: number) => {
+    // In a real implementation, this would call a weather API
+    // For demo purposes, randomly assign a weather condition
+    const randomCondition = Math.random();
+    
+    if (randomCondition > 0.9) {
+      // Extreme weather - 10% chance
+      setWeatherMultiplier(1.5);
+      toast.info("Note: Extreme weather conditions detected at this location (1.5× multiplier applies)");
+    } else if (randomCondition > 0.7) {
+      // Severe weather - 20% chance
+      setWeatherMultiplier(1.2);
+      toast.info("Note: Rainy conditions detected at this location (1.2× multiplier applies)");
+    } else {
+      // Normal weather - 70% chance
+      setWeatherMultiplier(1.0);
+    }
+  };
 
   // Validate a specific field
   const validateField = (field: string, value: string): boolean => {
@@ -115,6 +155,10 @@ const Home: React.FC = () => {
       newErrors.property = "Property address is required";
     }
     
+    if (!isValidAddress) {
+      newErrors.property = "Please select a valid address from the suggestions";
+    }
+    
     if (showAgentFields) {
       if (!agentName.trim()) {
         newErrors.agentName = "Agent/landlord name is required";
@@ -140,6 +184,11 @@ const Home: React.FC = () => {
     
     if (!validateForm()) return;
     
+    if (!coordinates) {
+      toast.error("Please select a valid address from the suggestions");
+      return;
+    }
+    
     setIsLoading(true);
     
     // Collect landlord info since it's required now
@@ -158,13 +207,20 @@ const Home: React.FC = () => {
         id: crypto.randomUUID(),
         address: propertyInput,
         description: '',
-        price: 30, // Default price
-        landlordInfo // Always include landlord info
+        price: 25, // Base price - will be recalculated in CartContext
+        landlordInfo, // Always include landlord info
+        coordinates,
+        pricing: {
+          baseFee: 25,
+          distanceSurcharge: 0, // Will be calculated in CartContext
+          weatherMultiplier,
+          finalPrice: 25 * weatherMultiplier // Will be recalculated in CartContext
+        }
       });
       
-      // Show success notification
+      // Show success notification with pricing information
       toast.success("Property added to cart", {
-        description: "You can view your cart to see the property details."
+        description: `Base fee: $25 ${weatherMultiplier > 1 ? `• Weather adjustment: ${weatherMultiplier}×` : ''}`
       });
       
       // Reset form
@@ -174,6 +230,9 @@ const Home: React.FC = () => {
       setAgentEmail('');
       setAgentPhone('');
       setAgentCompany('');
+      setCoordinates(null);
+      setIsValidAddress(false);
+      setWeatherMultiplier(1.0);
       
     } catch (error) {
       toast.error("Failed to add property", {
@@ -239,6 +298,7 @@ const Home: React.FC = () => {
                         value={propertyInput}
                         onChange={(e) => {
                           setPropertyInput(e.target.value);
+                          setIsValidAddress(false);
                           validateField('property', e.target.value);
                         }}
                       />
@@ -249,6 +309,17 @@ const Home: React.FC = () => {
                     <div className="mt-2 p-2 bg-primary/5 border rounded text-sm">
                       <p className="font-medium">Selected address:</p>
                       <p>{formattedAddress}</p>
+                      {coordinates && (
+                        <div className="mt-1 flex items-center text-xs text-muted-foreground">
+                          <span>Coordinates: {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}</span>
+                          {weatherMultiplier > 1 && (
+                            <div className="ml-2 flex items-center text-amber-600">
+                              <CloudRain className="h-3 w-3 mr-1" />
+                              <span>{weatherMultiplier === 1.5 ? "Extreme weather" : "Rainy conditions"} ({weatherMultiplier}×)</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -333,6 +404,7 @@ const Home: React.FC = () => {
                 disabled={
                   isLoading || 
                   !propertyInput.trim() || 
+                  !isValidAddress ||
                   !agentName.trim() || 
                   !agentEmail.trim() || 
                   !agentPhone.trim()
@@ -347,6 +419,12 @@ const Home: React.FC = () => {
                   "Add to Cart"
                 )}
               </Button>
+              
+              {isValidAddress && (
+                <div className="mt-2 text-center text-xs text-muted-foreground">
+                  Base fee: $25 {weatherMultiplier > 1 ? `• Weather adjustment: ${weatherMultiplier}×` : ''}
+                </div>
+              )}
             </div>
           </form>
         </motion.div>
