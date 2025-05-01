@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -10,16 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { format } from 'date-fns';
-import { Eye } from 'lucide-react';
+import { Eye, Edit, Check } from 'lucide-react';
+
 const AdminOrders: React.FC = () => {
   const navigate = useNavigate();
-  const {
-    user,
-    isAuthenticated
-  } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [orderCount, setOrderCount] = useState(0);
 
   // Protect route - only admins can access
   useEffect(() => {
@@ -34,9 +34,22 @@ const AdminOrders: React.FC = () => {
     const loadOrders = async () => {
       if (!user || user.role !== 'admin') return;
       setIsLoading(true);
+      
       try {
+        // Initialize mock data to ensure test orders exist
+        await api.initMockData(user);
+        
+        // Get all orders from the API
         const allOrders = await api.getOrders();
-        setOrders(allOrders);
+        console.log("Admin Orders: Retrieved orders:", allOrders);
+        
+        // Sort orders by date (newest first)
+        const sortedOrders = [...allOrders].sort((a, b) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        
+        setOrders(sortedOrders);
+        setOrderCount(sortedOrders.length);
       } catch (error) {
         console.error('Error loading orders:', error);
         toast.error("Failed to load orders");
@@ -44,15 +57,19 @@ const AdminOrders: React.FC = () => {
         setIsLoading(false);
       }
     };
+    
     loadOrders();
 
     // Subscribe to WebSocket updates
     const unsubscribe = api.subscribeToAdminUpdates(data => {
-      // Handle different types of updates
       if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED' || data.type === 'ORDER_STEP_UPDATE') {
         // Refresh orders
         api.getOrders().then(updatedOrders => {
-          setOrders(updatedOrders);
+          const sortedOrders = [...updatedOrders].sort((a, b) => {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
+          setOrders(sortedOrders);
+          setOrderCount(sortedOrders.length);
         });
 
         // Show a toast notification for new orders
@@ -62,6 +79,9 @@ const AdminOrders: React.FC = () => {
       }
     });
 
+    // Ensure all orders are visible to admin
+    api.ensureOrdersVisibleToAdmin();
+
     // Cleanup
     return () => {
       unsubscribe();
@@ -69,7 +89,19 @@ const AdminOrders: React.FC = () => {
   }, [user]);
 
   // Filter orders by search term
-  const filteredOrders = orders.filter(order => order.id.toLowerCase().includes(searchTerm.toLowerCase()) || order.properties.some(p => p.address.toLowerCase().includes(searchTerm.toLowerCase())) || order.agentContact?.name && order.agentContact.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredOrders = orders.filter(order => 
+    order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    order.properties.some(p => p.address.toLowerCase().includes(searchTerm.toLowerCase())) || 
+    (order.agentContact?.name && order.agentContact.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    getUserName(order.userId).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Helper function to get user name from userId
+  const getUserName = (userId: string): string => {
+    // This will be replaced with actual user lookup in a real app
+    const user = orders.find(order => order.userId === userId)?.agentContact?.name;
+    return user || "Unknown User";
+  };
 
   // Status badge color
   const getStatusColor = (status: string) => {
@@ -91,7 +123,20 @@ const AdminOrders: React.FC = () => {
   const handleViewDetails = (orderId: string) => {
     navigate(`/admin/orders/${orderId}`);
   };
-  return <div className="bg-background min-h-screen">
+  
+  // Advance order status handler
+  const handleAdvanceOrderStatus = async (orderId: string) => {
+    try {
+      await api.advanceOrderStep(orderId);
+      toast.success("Order status advanced successfully");
+    } catch (error) {
+      console.error('Error advancing order status:', error);
+      toast.error("Failed to advance order status");
+    }
+  };
+
+  return (
+    <div className="bg-background min-h-screen">
       {/* Left sidebar */}
       <AdminSidebar />
       
@@ -103,33 +148,51 @@ const AdminOrders: React.FC = () => {
           
           {/* Orders List */}
           <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>All Orders</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle>All Orders ({orderCount})</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Managing orders from all users
+                </p>
+              </div>
             </CardHeader>
             <CardContent>
-              {isLoading ? <div className="flex justify-center items-center h-32">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-32">
                   <p className="text-muted-foreground">Loading orders...</p>
-                </div> : <Table>
+                </div>
+              ) : (
+                <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Order ID</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead>User</TableHead>
                       <TableHead>Properties</TableHead>
                       <TableHead>Contact</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead></TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredOrders.length === 0 ? <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    {filteredOrders.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                           No orders found
                         </TableCell>
-                      </TableRow> : filteredOrders.map(order => <TableRow key={order.id}>
-                          <TableCell className="font-medium">#{order.id.substring(0, 8)}</TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredOrders.map(order => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium">
+                            #{order.id.substring(0, 8)}
+                          </TableCell>
                           <TableCell>
                             {format(new Date(order.createdAt), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            {getUserName(order.userId)}
                           </TableCell>
                           <TableCell>
                             {order.properties.length} {order.properties.length === 1 ? 'property' : 'properties'}
@@ -142,17 +205,37 @@ const AdminOrders: React.FC = () => {
                             <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon" onClick={() => handleViewDetails(order.id)} className="when i click on the see icon i want to be able to see all the onformation and deatilas aboit that irder and the live uopdates etc\n">
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <div className="flex space-x-2">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleViewDetails(order.id)}
+                                title="View details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleAdvanceOrderStatus(order.id)}
+                                title="Advance status"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
-                        </TableRow>)}
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
-                </Table>}
+                </Table>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default AdminOrders;
