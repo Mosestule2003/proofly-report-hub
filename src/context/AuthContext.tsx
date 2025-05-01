@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/services/api';
 import notificationService from '@/utils/notificationService';
+import { AppNotification } from '@/components/NotificationBell';
 
 export interface User {
   id: string;
@@ -43,6 +44,19 @@ export const mockUsers: User[] = [
     createdAt: new Date().toISOString()
   },
 ];
+
+// Helper function to create notifications with all required fields
+const createNotification = (title: string, message: string, type: 'info' | 'success' | 'warning' | 'error', actionUrl?: string): AppNotification => {
+  return {
+    id: `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    title,
+    message,
+    date: new Date(),
+    read: false,
+    type,
+    actionUrl
+  };
+};
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -93,11 +107,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         toast.success(`Welcome back, ${foundUser.name}!`);
         
         // Create login notification
-        notificationService.broadcast({
-          title: 'User Login',
-          message: `${foundUser.name} has logged in`,
-          type: 'info',
-        });
+        notificationService.broadcast(createNotification(
+          'User Login',
+          `${foundUser.name} has logged in`,
+          'info'
+        ));
         
         return true;
       }
@@ -129,11 +143,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         toast.success(`Welcome back, ${foundUser.name}!`);
         
         // Create admin login notification
-        notificationService.broadcast({
-          title: 'Admin Login',
-          message: `${foundUser.name} has logged in to admin panel`,
-          type: 'info',
-        });
+        notificationService.broadcast(createNotification(
+          'Admin Login',
+          `${foundUser.name} has logged in to admin panel`,
+          'info'
+        ));
         
         return true;
       }
@@ -184,12 +198,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       toast.success("Account created successfully!");
       
       // Create new user notification for admins
-      notificationService.broadcast({
-        title: 'New User Registration',
-        message: `${name} has created an account`,
-        type: 'info',
-        actionUrl: `/admin/users/${createdUser.id}`
-      });
+      notificationService.broadcast(createNotification(
+        'New User Registration',
+        `${name} has created an account`,
+        'info',
+        `/admin/users/${createdUser.id}`
+      ));
       
       return true;
     } catch (error) {
