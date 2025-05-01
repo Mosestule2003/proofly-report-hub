@@ -1,4 +1,3 @@
-
 import React, { useState, FormEvent, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -30,6 +29,7 @@ const Home: React.FC = () => {
   const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null);
   const [weatherMultiplier, setWeatherMultiplier] = useState<number>(1.0);
   const [isValidAddress, setIsValidAddress] = useState(false);
+  const [googleMapsError, setGoogleMapsError] = useState(false);
   
   const autoCompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null); // Changed to HTMLInputElement
@@ -87,9 +87,18 @@ const Home: React.FC = () => {
       };
     } catch (error) {
       console.error("Error initializing Google Maps autocomplete:", error);
+      setGoogleMapsError(true);
       // If there's an error, we won't disable the input field
     }
   }, [isLoaded]);
+
+  // Handle API errors
+  useEffect(() => {
+    if (loadError) {
+      console.error("Google Maps API failed to load:", loadError);
+      setGoogleMapsError(true);
+    }
+  }, [loadError]);
 
   // Simulate weather check
   const simulateWeatherCheck = (lat: number, lng: number) => {
@@ -109,6 +118,24 @@ const Home: React.FC = () => {
       // Normal weather - 70% chance
       setWeatherMultiplier(1.0);
     }
+  };
+
+  // Manual address validation for when Google Maps API fails
+  const handleManualAddressInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPropertyInput(value);
+    
+    // Simple validation for non-empty address
+    if (value.trim().length > 10) {
+      setIsValidAddress(true);
+      // Use a default location if we can't get real coordinates
+      setCoordinates({ lat: 34.0522, lng: -118.2437 }); // Los Angeles coordinates as fallback
+    } else {
+      setIsValidAddress(false);
+      setCoordinates(null);
+    }
+    
+    validateField('property', value);
   };
 
   // Validate a specific field
@@ -160,8 +187,12 @@ const Home: React.FC = () => {
       newErrors.property = "Property address is required";
     }
     
-    if (!isValidAddress) {
+    // If Google Maps is working, validate address from autocomplete
+    // Otherwise accept manual entry if it looks reasonable
+    if (!googleMapsError && !isValidAddress) {
       newErrors.property = "Please select a valid address from the suggestions";
+    } else if (googleMapsError && propertyInput.trim().length < 10) {
+      newErrors.property = "Please enter a complete address";
     }
     
     if (showAgentFields) {
@@ -189,7 +220,8 @@ const Home: React.FC = () => {
     
     if (!validateForm()) return;
     
-    if (!coordinates) {
+    // Allow submission with manually entered address if Google Maps failed
+    if (!googleMapsError && !coordinates) {
       toast.error("Please select a valid address from the suggestions");
       return;
     }
@@ -214,7 +246,7 @@ const Home: React.FC = () => {
         description: '',
         price: 25, // Base price - will be recalculated in CartContext
         landlordInfo, // Always include landlord info
-        coordinates,
+        coordinates: coordinates || { lat: 34.0522, lng: -118.2437 }, // Fallback coordinates if needed
         pricing: {
           baseFee: 25,
           distanceSurcharge: 0, // Will be calculated in CartContext
@@ -251,15 +283,13 @@ const Home: React.FC = () => {
 
   // Handle errors with Maps API loading
   if (loadError) {
-    return (
-      <div className="flex flex-col min-h-[calc(100vh-4rem)] items-center justify-center">
-        <div className="max-w-md text-center">
-          <h2 className="text-2xl font-bold mb-4">Error loading maps</h2>
-          <p className="mb-4">We couldn't load the Google Maps API. Please try refreshing the page.</p>
-          <Button onClick={() => window.location.reload()}>Refresh Page</Button>
-        </div>
-      </div>
-    );
+    // Instead of showing a full-screen error, we'll just display a warning toast
+    // and continue to render the form with manual address entry
+    useEffect(() => {
+      toast.warning("Address autocomplete unavailable", {
+        description: "You can still enter an address manually"
+      });
+    }, []);
   }
   
   return (
@@ -284,10 +314,13 @@ const Home: React.FC = () => {
                 <div>
                   <Label htmlFor="property" className="text-base font-medium">
                     Property Address
+                    {googleMapsError && (
+                      <span className="ml-2 text-sm text-amber-600">(Manual entry)</span>
+                    )}
                   </Label>
                   <div className="relative mt-1.5">
                     <MapPin className="absolute top-3 left-3 text-muted-foreground h-5 w-5" />
-                    {!isLoaded ? (
+                    {!isLoaded && !loadError ? (
                       <div className="w-full p-3 pl-10 border rounded-lg h-24 bg-muted/20 flex items-center justify-center">
                         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                         <span className="ml-2">Loading address search...</span>
@@ -299,18 +332,24 @@ const Home: React.FC = () => {
                         className={`w-full p-3 pl-10 ${
                           errors.property ? 'border-red-500 focus:ring-red-200' : 'focus:ring-primary focus:border-primary'
                         }`}
-                        placeholder="Start typing an address..."
+                        placeholder={googleMapsError ? "Enter full property address..." : "Start typing an address..."}
                         value={propertyInput}
                         onChange={(e) => {
-                          setPropertyInput(e.target.value);
-                          setIsValidAddress(false);
-                          validateField('property', e.target.value);
+                          if (googleMapsError) {
+                            // Manual input handling when Google Maps fails
+                            handleManualAddressInput(e);
+                          } else {
+                            // Normal handling when autocomplete works
+                            setPropertyInput(e.target.value);
+                            setIsValidAddress(false);
+                            validateField('property', e.target.value);
+                          }
                         }}
                       />
                     )}
                   </div>
                   {errors.property && <p className="text-sm text-red-500 mt-1">{errors.property}</p>}
-                  {formattedAddress && (
+                  {formattedAddress && !googleMapsError && (
                     <div className="mt-2 p-2 bg-primary/5 border rounded text-sm">
                       <p className="font-medium">Selected address:</p>
                       <p>{formattedAddress}</p>
@@ -325,6 +364,11 @@ const Home: React.FC = () => {
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+                  {googleMapsError && propertyInput.trim().length > 0 && (
+                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-sm">
+                      <p>Address autocomplete is unavailable. Please enter a complete address manually.</p>
                     </div>
                   )}
                 </div>
@@ -409,7 +453,7 @@ const Home: React.FC = () => {
                 disabled={
                   isLoading || 
                   !propertyInput.trim() || 
-                  !isValidAddress ||
+                  (!googleMapsError && !isValidAddress) ||
                   !agentName.trim() || 
                   !agentEmail.trim() || 
                   !agentPhone.trim()
