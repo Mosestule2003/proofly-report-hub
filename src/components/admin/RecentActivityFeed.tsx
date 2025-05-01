@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CheckCircle, AlertCircle, Clock, Calendar, UserCircle2 } from 'lucide-react';
@@ -71,8 +70,8 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
       }
     });
     
-    // Listen for order related events
-    const unsubscribeOrders = api.subscribeToOrderUpdates((data) => {
+    // For order related events, use adminUpdates subscription instead
+    const unsubscribeAdmin = api.subscribeToAdminUpdates((data) => {
       if (data.type === 'ORDER_CREATED') {
         const newActivity: ActivityItem = {
           id: `order-${Date.now()}`,
@@ -109,7 +108,7 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
     
     return () => {
       unsubscribe();
-      unsubscribeOrders();
+      unsubscribeAdmin();
     };
   }, [initialActivities, notifications]);
 

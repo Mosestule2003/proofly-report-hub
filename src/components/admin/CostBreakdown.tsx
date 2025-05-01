@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -36,8 +35,16 @@ const CostBreakdown: React.FC = () => {
         const orders = await api.getOrders();
         if (orders && orders.length > 0) {
           // Calculate evaluator payouts (60% of total revenue)
-          const totalRevenue = orders.reduce((sum, order) => 
-            sum + (typeof order.totalPrice === 'number' ? order.totalPrice : 0), 0);
+          const totalRevenue = orders.reduce((sum, order) => {
+            // Check for either totalPrice or amount property
+            let orderValue = 0;
+            if (typeof order.totalPrice === 'number') {
+              orderValue = order.totalPrice;
+            } else if (order.amount && typeof order.amount === 'number') {
+              orderValue = order.amount;
+            }
+            return sum + orderValue;
+          }, 0);
           
           const evaluatorPayouts = Math.round((totalRevenue * 0.6) / totalRevenue * 100);
           const softwareOps = Math.round((totalRevenue * 0.2) / totalRevenue * 100);

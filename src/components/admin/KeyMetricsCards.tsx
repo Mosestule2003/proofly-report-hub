@@ -9,11 +9,11 @@ import { useNotificationsContext } from '@/context/NotificationsContext';
 // Define the Order interface to match with what we're using
 interface Order {
   id: string;
-  tenantName: string;
-  propertyAddress: string;
-  date: string;
+  tenantName?: string;
+  propertyAddress?: string;
+  date?: string;
   status: string;
-  amount: number;
+  amount?: number; // Optional amount field
   rating?: number;
   userId: string;
   properties: any[];
@@ -56,9 +56,16 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [] }) => {
         const totalProperties = allOrders.reduce((acc, order) => 
           acc + (Array.isArray(order.properties) ? order.properties.length : 0), 0);
         
-        const totalRevenue = allOrders.reduce((acc, order) => 
-          acc + (typeof order.totalPrice === 'number' ? order.totalPrice : 
-                typeof order.amount === 'number' ? order.amount : 0), 0);
+        const totalRevenue = allOrders.reduce((acc, order) => {
+          // Check for either totalPrice or amount property
+          let orderValue = 0;
+          if (typeof order.totalPrice === 'number') {
+            orderValue = order.totalPrice;
+          } else if (order.amount && typeof order.amount === 'number') {
+            orderValue = order.amount;
+          }
+          return acc + orderValue;
+        }, 0);
         
         // Simulate previous period (for demo, using 80-90% of current values)
         const prevProperties = Math.floor(totalProperties * (0.8 + Math.random() * 0.1));
