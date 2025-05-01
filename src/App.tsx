@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,8 +21,8 @@ import AdminOrders from "./pages/AdminOrders";
 import AdminUserDetail from "./pages/AdminUserDetail";
 import AdminLogin from "./pages/AdminLogin";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
-import CheckoutProcessing from "./pages/CheckoutProcessing"; // New import
-import PaymentPage from "./pages/PaymentPage"; // New import
+import CheckoutProcessing from "./pages/CheckoutProcessing";
+import PaymentPage from "./pages/PaymentPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,8 +40,8 @@ const App = () => (
                 <Header />
                 <main className="flex-grow">
                   <Routes>
-                    {/* Public routes */}
-                    <Route path="/" element={<Home />} />
+                    {/* Public routes with admin redirect */}
+                    <Route path="/" element={<Index />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/admin/login" element={<AdminLogin />} />
@@ -63,10 +62,6 @@ const App = () => (
                       <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
                       <Route path="/admin/orders" element={<AdminOrders />} />
                     </Route>
-                    
-                    {/* Redirect admin users trying to access tenant routes */}
-                    <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
-                    <Route path="/cart" element={<Navigate to="/admin" replace />} />
                     
                     {/* 404 Route */}
                     <Route path="*" element={<NotFound />} />
@@ -92,5 +87,18 @@ const App = () => (
     </AuthProvider>
   </QueryClientProvider>
 );
+
+// New component to handle the Index route
+const Index = () => {
+  const { user, isAuthenticated } = useAuth();
+  
+  // If the user is an admin, redirect to admin dashboard
+  if (isAuthenticated && user?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+  
+  // Otherwise, show the home page
+  return <Home />;
+};
 
 export default App;

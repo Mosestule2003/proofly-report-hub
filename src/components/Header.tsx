@@ -13,12 +13,13 @@ export function Header() {
   const { user, logout, isAuthenticated } = useAuth();
   const { properties } = useCart();
   
-  // Don't show header on admin pages except for login
+  // Don't show header on admin pages or for admin users
   const isAdminPage = location.pathname.startsWith('/admin');
   const isAdminLoginPage = location.pathname === '/admin/login';
+  const isAdminUser = isAuthenticated && user?.role === 'admin';
   
-  // Only hide on admin pages that are not the login page
-  if (isAdminPage && !isAdminLoginPage) {
+  // Hide header on admin pages (except login) or for admin users on any page
+  if ((isAdminPage && !isAdminLoginPage) || isAdminUser) {
     return <ReturnToAdminBanner />;
   }
 
