@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building, BarChart3, CircleDollarSign, ArrowUp, ArrowDown, Users } from 'lucide-react';
@@ -43,6 +42,11 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [] }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { notifications } = useNotificationsContext();
   
+  // Track if we've already sent notifications to prevent duplicates
+  const notificationSentRef = useRef<boolean>(false);
+  // Track previous metrics to only notify on actual changes
+  const prevMetricsRef = useRef<MetricsHistory | null>(null);
+  
   // Load historical metrics for comparison
   useEffect(() => {
     const loadHistoricalMetrics = async () => {
@@ -73,21 +77,42 @@ const KeyMetricsCards: React.FC<KeyMetricsCardsProps> = ({ orders = [] }) => {
         const prevRevenue = Math.floor(totalRevenue * (0.8 + Math.random() * 0.1));
         const prevUsers = Math.floor(users.length * (0.8 + Math.random() * 0.1));
         
-        setMetricsHistory({
+        const newMetrics = {
           properties: { current: totalProperties, previous: prevProperties },
           evaluations: { current: allOrders.length, previous: prevEvaluations },
           revenue: { current: totalRevenue, previous: prevRevenue },
           users: { current: users.length, previous: prevUsers }
-        });
+        };
         
-        // Create notification for significant growth
-        if (totalProperties > prevProperties * 1.2) { // 20% growth
-          notifications.addNotification(
-            'Significant Growth',
-            `Properties under management increased by ${Math.round((totalProperties/prevProperties - 1) * 100)}% compared to last period`,
-            { type: 'success', showToast: true }
-          );
+        setMetricsHistory(newMetrics);
+        
+        // Only send growth notification once per session and only if there's an actual change
+        if (!notificationSentRef.current && prevMetricsRef.current) {
+          const previousTotal = prevMetricsRef.current.properties.current;
+          
+          // Check if properties have significantly increased (20%+ growth) since last update
+          if (totalProperties > previousTotal && 
+              totalProperties > prevMetricsRef.current.properties.current * 1.2) {
+            
+            notifications.addNotification(
+              'Significant Growth',
+              `Properties under management increased by ${Math.round((totalProperties/prevMetricsRef.current.properties.current - 1) * 100)}% compared to last period`,
+              { type: 'success', showToast: true }
+            );
+            
+            // Mark that we've sent a notification
+            notificationSentRef.current = true;
+            
+            // Reset notification flag after 1 hour to allow future notifications
+            setTimeout(() => {
+              notificationSentRef.current = false;
+            }, 3600000); // 1 hour
+          }
         }
+        
+        // Update our reference to current metrics
+        prevMetricsRef.current = newMetrics;
+        
       } catch (error) {
         console.error('Error loading metrics history:', error);
       } finally {

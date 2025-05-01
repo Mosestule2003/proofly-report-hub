@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   PieChart, 
@@ -16,6 +17,19 @@ interface CostData {
   value: number;
 }
 
+// Define the Order interface to match API data
+interface Order {
+  id: string;
+  totalPrice: number;
+  amount?: number;
+  // Add other required properties
+  status: string;
+  userId: string;
+  properties: any[];
+  discount: number;
+  createdAt: string;
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const CostBreakdown: React.FC = () => {
@@ -26,6 +40,9 @@ const CostBreakdown: React.FC = () => {
     { name: 'Savings', value: 20 },
   ]);
   const { notifications } = useNotificationsContext();
+  
+  // Track if we've already sent notifications to prevent duplicates
+  const savingsNotificationSentRef = useRef<boolean>(false);
   
   useEffect(() => {
     // Attempt to load real cost breakdown data from API
@@ -60,13 +77,21 @@ const CostBreakdown: React.FC = () => {
           
           setData(newData);
           
-          // Check if savings percentage is less than 15% and notify
-          if (savings < 15 && totalRevenue > 1000) {
+          // Only send savings alert notification once and if revenue is substantial
+          if (!savingsNotificationSentRef.current && savings < 15 && totalRevenue > 1000) {
             notifications.addNotification(
               'Cost Alert',
               'Savings percentage has dropped below 15% of revenue',
               { type: 'warning', showToast: true }
             );
+            
+            // Mark that we've sent this notification
+            savingsNotificationSentRef.current = true;
+            
+            // Reset notification flag after 24 hours
+            setTimeout(() => {
+              savingsNotificationSentRef.current = false;
+            }, 86400000); // 24 hours
           }
         }
       } catch (error) {
