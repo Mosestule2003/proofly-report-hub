@@ -106,12 +106,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem('proofly_user', JSON.stringify(foundUser));
         toast.success(`Welcome back, ${foundUser.name}!`);
         
-        // Create login notification
-        notificationService.broadcast(createNotification(
-          'User Login',
-          `${foundUser.name} has logged in`,
-          'info'
-        ));
+        // No notification for regular user login - reduced notification spam
         
         return true;
       }
@@ -142,12 +137,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem('proofly_user', JSON.stringify(foundUser));
         toast.success(`Welcome back, ${foundUser.name}!`);
         
-        // Create admin login notification
-        notificationService.broadcast(createNotification(
-          'Admin Login',
-          `${foundUser.name} has logged in to admin panel`,
-          'info'
-        ));
+        // No notification for admin login - reduced notification spam
         
         return true;
       }
@@ -197,7 +187,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem('proofly_user', JSON.stringify(createdUser));
       toast.success("Account created successfully!");
       
-      // Create new user notification for admins
+      // Create new user notification for admins - this is important
       notificationService.broadcast(createNotification(
         'New User Registration',
         `${name} has created an account`,

@@ -52,7 +52,7 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
         
         setActivities(prev => [newActivity, ...prev]);
         
-        // Also create a notification
+        // Create a notification for new user registrations (important)
         notifications.addNotification(
           'New User Registration', 
           `${user.name || 'Someone new'} just created an account!`,
@@ -61,6 +61,7 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
       }
       
       if (data.type === 'USER_UPDATED') {
+        // Only add activity - no notification for user updates to reduce spam
         const newActivity: ActivityItem = {
           id: `user-update-${Date.now()}`,
           type: 'user_login',
@@ -89,7 +90,7 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
         
         setActivities(prev => [newActivity, ...prev]);
         
-        // Create notification
+        // Create notification for new orders (important business event)
         notifications.addNotification(
           'New Order Placed', 
           `A new property evaluation order has been placed${data.order?.properties ? ` for ${data.order.properties.length} properties` : ''}`,
@@ -113,7 +114,7 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
         
         setActivities(prev => [newActivity, ...prev]);
         
-        // Create notification
+        // Report ready notifications (important for both admin and customer)
         notifications.addNotification(
           'Evaluation Complete', 
           `Order #${data.orderId?.substring(0, 8) || 'Unknown'} evaluation has been completed`,
@@ -126,6 +127,8 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
       }
       
       if (data.type === 'REPORT_CREATED') {
+        // Only add activity - no notification for report creation to reduce spam
+        // (we already notify on 'report ready' status)
         const newActivity: ActivityItem = {
           id: `report-${Date.now()}`,
           type: 'evaluation_complete',
@@ -138,14 +141,15 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
       }
     });
     
-    // Create user inquiry handler (simulated)
+    // Create user inquiry handler with reduced frequency (once every 20-30 minutes instead of 5-10)
     const simulateUserInquiry = () => {
-      // Simulate a random user inquiry every 5-10 minutes (purely for demo purposes)
-      const randomTime = Math.floor(Math.random() * (600000 - 300000) + 300000);
+      // Simulate a random user inquiry every 20-30 minutes (reduced frequency)
+      const randomTime = Math.floor(Math.random() * (1800000 - 1200000) + 1200000);
       
       setTimeout(() => {
         // Only create inquiry if we have activities (to avoid spam in empty systems)
-        if (activities.length > 0) {
+        // and only 30% chance of creating an inquiry (to further reduce frequency)
+        if (activities.length > 0 && Math.random() < 0.3) {
           const inquiryTypes = [
             'pricing question',
             'evaluation process',
@@ -176,19 +180,21 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
             
             setActivities(prev => [newActivity, ...prev]);
             
-            // Create notification for admin
+            // User inquiries are important - notify admins
             notifications.addNotification(
               'New User Inquiry', 
               `${randomUser.name} has a question about ${randomInquiryType}`,
               { 
                 type: 'info', 
-                showToast: true,
+                showToast: false, // Don't show toast for every inquiry
                 actionUrl: `/admin/users/${randomUser.id}`
               }
             );
             
-            // Display toast
-            toast.info(`New user inquiry received from ${randomUser.name}`);
+            // Display toast but less frequently
+            if (Math.random() < 0.5) {
+              toast.info(`New user inquiry received from ${randomUser.name}`);
+            }
           }
         }
         
@@ -197,8 +203,8 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
       }, randomTime);
     };
     
-    // Start the simulation (for demo purposes only)
-    const inquiryTimer = setTimeout(simulateUserInquiry, 30000);
+    // Start the simulation (for demo purposes only), but with longer delay
+    const inquiryTimer = setTimeout(simulateUserInquiry, 60000); // Start after 1 minute
     
     return () => {
       unsubscribe();
