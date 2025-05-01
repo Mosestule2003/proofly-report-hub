@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Building, CheckCircle, MapPin, Clock, Loader2, MessageSquare, CalendarCheck, Calendar } from 'lucide-react';
@@ -13,6 +14,7 @@ import { Evaluator } from './EvaluatorProfile';
 interface OrderProcessingModalProps {
   properties: Property[];
   onComplete: () => void;
+  totalPrice: number; // Added the totalPrice prop to the interface
 }
 
 // Step durations (in milliseconds)
