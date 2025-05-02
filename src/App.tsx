@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { CartProvider } from "@/context/CartContext";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { NotificationsProvider } from "@/context/NotificationsContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -89,18 +89,5 @@ const App = () => (
     </AuthProvider>
   </QueryClientProvider>
 );
-
-// New component to handle the Index route
-const Index = () => {
-  const { user, isAuthenticated } = useAuth();
-  
-  // If the user is an admin, redirect to admin dashboard
-  if (isAuthenticated && user?.role === 'admin') {
-    return <Navigate to="/admin" replace />;
-  }
-  
-  // Otherwise, show the home page
-  return <Home />;
-};
 
 export default App;
