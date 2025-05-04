@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Building, Check } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 interface OrderProcessingModalProps {
   properties: any[];
@@ -9,7 +10,6 @@ interface OrderProcessingModalProps {
   rush?: boolean; // Optional rush property
 }
 
-// This is the actual component implementation
 export const OrderProcessingModal: React.FC<OrderProcessingModalProps> = ({
   properties,
   onComplete,
@@ -52,7 +52,7 @@ export const OrderProcessingModal: React.FC<OrderProcessingModalProps> = ({
             {/* Progress bar */}
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
               <div 
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                className="bg-[#FF385C] h-2.5 rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -104,7 +104,7 @@ export const OrderProcessingModal: React.FC<OrderProcessingModalProps> = ({
             {/* Progress bar */}
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
               <div 
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                className="bg-[#FF385C] h-2.5 rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>

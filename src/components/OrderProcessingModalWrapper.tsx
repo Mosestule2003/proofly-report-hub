@@ -9,7 +9,6 @@ interface OrderProcessingModalWrapperProps {
   rush?: boolean;
 }
 
-// Create a wrapper component that includes the rush property
 export const OrderProcessingModalWrapper: React.FC<OrderProcessingModalWrapperProps> = ({
   properties,
   onComplete,

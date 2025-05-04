@@ -47,6 +47,7 @@ const CheckoutSuccess: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
   const [showWorkflow, setShowWorkflow] = useState(false);
+  const [showSimulation, setShowSimulation] = useState(true);
 
   // This simulates fetching the order details
   useEffect(() => {
@@ -80,30 +81,40 @@ const CheckoutSuccess: React.FC = () => {
       setOrder(mockOrder);
       setIsLoading(false);
       
-      // Show workflow after a short delay
-      const workflowTimer = setTimeout(() => {
-        setShowWorkflow(true);
-      }, 2000);
-      
-      return () => clearTimeout(workflowTimer);
+      // Keep showing simulation by default
+      setShowSimulation(true);
     }, 1500);
 
     return () => clearTimeout(timer);
   }, [orderId, searchParams]);
 
   const handleComplete = async () => {
-    navigate('/dashboard');
+    setShowSimulation(false);
+    setShowWorkflow(true);
   };
 
   const rushBooking = searchParams.get('rush') === 'true';
 
-  if (isLoading || !order) {
+  if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[calc(100vh-64px)]">
         <OrderProcessingModalWrapper
           properties={[]}
           onComplete={handleComplete}
           totalPrice={0}
+          rush={rushBooking}
+        />
+      </div>
+    );
+  }
+
+  if (showSimulation && order) {
+    return (
+      <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[calc(100vh-64px)]">
+        <OrderProcessingModalWrapper
+          properties={order.properties}
+          onComplete={handleComplete}
+          totalPrice={order.totalPrice}
           rush={rushBooking}
         />
       </div>
@@ -136,28 +147,30 @@ const CheckoutSuccess: React.FC = () => {
           <CardDescription>Review your property evaluation details</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <SuccessItem 
-              icon={Calendar}
-              title="Evaluation Schedule"
-              description={rushBooking ? "Within 24 hours (Rush)" : "Within 3-5 business days"}
-            />
-            <SuccessItem 
-              icon={CreditCard}
-              title="Payment"
-              description={`$${order.totalPrice.toFixed(2)} CAD`}
-            />
-            <SuccessItem 
-              icon={Clock}
-              title="Order Placed"
-              description={new Date().toLocaleString()}
-            />
-          </div>
+          {order && (
+            <div className="space-y-4">
+              <SuccessItem 
+                icon={Calendar}
+                title="Evaluation Schedule"
+                description={rushBooking ? "Within 24 hours (Rush)" : "Within 3-5 business days"}
+              />
+              <SuccessItem 
+                icon={CreditCard}
+                title="Payment"
+                description={`$${order.totalPrice.toFixed(2)} CAD`}
+              />
+              <SuccessItem 
+                icon={Clock}
+                title="Order Placed"
+                description={new Date().toLocaleString()}
+              />
+            </div>
+          )}
 
           <div className="border-t border-gray-200 pt-4">
             <h3 className="font-medium text-gray-900 mb-3">Properties to be Evaluated:</h3>
             <div className="space-y-3">
-              {order.properties.map((property) => (
+              {order && order.properties.map((property) => (
                 <div key={property.id} className="bg-gray-50 p-3 rounded-md">
                   <h4 className="font-medium">{property.address}</h4>
                   <p className="text-sm text-gray-600">{property.city}, {property.zipCode}</p>
@@ -170,34 +183,36 @@ const CheckoutSuccess: React.FC = () => {
             </div>
           </div>
           
-          <div className="border-t border-gray-200 pt-4">
-            <div className="flex justify-between mb-2">
-              <span className="text-gray-600">Subtotal</span>
-              <span>${order.totalPrice.toFixed(2)} CAD</span>
-            </div>
-            {order.discount && (
-              <div className="flex justify-between mb-2 text-green-600">
-                <span>Bulk Discount</span>
-                <span>-${((order.totalPrice * order.discount) / 100).toFixed(2)} CAD</span>
-              </div>
-            )}
-            {rushBooking && (
+          {order && (
+            <div className="border-t border-gray-200 pt-4">
               <div className="flex justify-between mb-2">
-                <span>Rush Fee</span>
-                <span>$7.00 CAD</span>
+                <span className="text-gray-600">Subtotal</span>
+                <span>${order.totalPrice.toFixed(2)} CAD</span>
               </div>
-            )}
-            {order.surge && (
-              <div className="flex justify-between mb-2">
-                <span>Surge Fee</span>
-                <span>$5.00 CAD</span>
+              {order.discount && (
+                <div className="flex justify-between mb-2 text-green-600">
+                  <span>Bulk Discount</span>
+                  <span>-${((order.totalPrice * order.discount) / 100).toFixed(2)} CAD</span>
+                </div>
+              )}
+              {rushBooking && (
+                <div className="flex justify-between mb-2">
+                  <span>Rush Fee</span>
+                  <span>$7.00 CAD</span>
+                </div>
+              )}
+              {order.surge && (
+                <div className="flex justify-between mb-2">
+                  <span>Surge Fee</span>
+                  <span>$5.00 CAD</span>
+                </div>
+              )}
+              <div className="flex justify-between font-semibold text-lg mt-2 pt-2 border-t border-gray-200">
+                <span>Total</span>
+                <span>${order.totalPrice.toFixed(2)} CAD</span>
               </div>
-            )}
-            <div className="flex justify-between font-semibold text-lg mt-2 pt-2 border-t border-gray-200">
-              <span>Total</span>
-              <span>${order.totalPrice.toFixed(2)} CAD</span>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
