@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -141,13 +140,7 @@ export const PropertyForm: React.FC = () => {
               </div>
               
               <div className="pt-4 border-t border-gray-100">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg font-semibold"></h3>
-                    <p className="text-sm text-gray-600">Standard property evaluation</p>
-                  </div>
-                  <div className="text-xl font-bold">$30</div>
-                </div>
+                
               </div>
             </div>
             
