@@ -38,8 +38,8 @@ const Home: React.FC = () => {
       {/* Enhanced Hero Section */}
       <section className="bg-white px-4 md:px-6 py-20 md:py-28">
         <div className="container mx-auto max-w-7xl">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
+          <div className="grid gap-12">
+            <div className="space-y-8 max-w-3xl mx-auto text-center">
               <div className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-sm">
                 <span className="text-[#FF385C] font-medium mr-1">New</span>
                 <span className="text-gray-800">Simplified property evaluation process</span>
@@ -49,12 +49,12 @@ const Home: React.FC = () => {
                 <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-gray-900 leading-tight">
                   Optimize, <span className="text-[#FF385C]">Outperform</span>
                 </h1>
-                <p className="mt-6 text-xl text-gray-600 max-w-2xl">
+                <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
                   Get professional property assessments quickly and easily with our streamlined platform. No hassle, no waiting.
                 </p>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
                   className="bg-[#FF385C] hover:bg-[#e0334f] text-white rounded-md py-6 px-8 text-lg shadow-md"
                   onClick={() => document.getElementById('property-form')?.scrollIntoView({ behavior: 'smooth' })}
@@ -70,17 +70,6 @@ const Home: React.FC = () => {
                 >
                   Learn More
                 </Button>
-              </div>
-            </div>
-            
-            <div className="hidden md:block">
-              <div className="relative">
-                <div className="absolute -top-12 -right-12 w-64 h-64 bg-[#FF385C]/5 rounded-full"></div>
-                <img 
-                  src="/public/lovable-uploads/a5e935d3-7e5a-41fd-b81f-2a413bc4c654.png" 
-                  alt="Property Evaluation" 
-                  className="w-full h-auto rounded-2xl shadow-lg relative z-10"
-                />
               </div>
             </div>
           </div>
@@ -253,8 +242,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Add custom styles for the feature numbers */}
-      <style jsx>{`
+      <style>{`
         .feature-card {
           position: relative;
         }
