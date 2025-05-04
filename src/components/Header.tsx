@@ -67,14 +67,14 @@ export function Header() {
                 <Button 
                   variant="outline" 
                   onClick={() => navigate('/dashboard')} 
-                  className="border-gray-300 hover:bg-[#FF385C] hover:border-[#FF385C] hover:text-white transition-colors"
+                  className="border-gray-300 hover:border-[#FF385C] hover:text-[#FF385C] transition-colors"
                 >
                   Dashboard
                 </Button>
                 <Button 
                   variant="ghost" 
                   onClick={logout} 
-                  className="hover:bg-[#FF385C] hover:text-white transition-colors"
+                  className="hover:text-[#FF385C] transition-colors"
                 >
                   Sign out
                 </Button>
@@ -82,7 +82,7 @@ export function Header() {
                 <Button 
                   variant="ghost" 
                   onClick={() => navigate('/login')} 
-                  className="hover:bg-[#FF385C] hover:text-white transition-colors"
+                  className="hover:text-[#FF385C] transition-colors"
                 >
                   Log in
                 </Button>
