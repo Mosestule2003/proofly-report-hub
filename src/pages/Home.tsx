@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -35,12 +34,23 @@ const Home: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Enhanced Hero Section */}
-      <section className="bg-white px-4 md:px-6 py-20 md:py-28">
-        <div className="container mx-auto max-w-7xl">
+      {/* Enhanced Hero Section with Glassmorphic Design */}
+      <section className="relative bg-white px-4 md:px-6 py-20 md:py-28 overflow-hidden">
+        {/* Background image */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1470813740244-df37b8c1edcb" 
+            alt="Background" 
+            className="w-full h-full object-cover opacity-20"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/90 to-white/70"></div>
+        </div>
+        
+        {/* Glassmorphic container */}
+        <div className="container mx-auto max-w-7xl relative z-10">
           <div className="grid gap-12">
             <div className="space-y-8 max-w-3xl mx-auto text-center">
-              <div className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-sm">
+              <div className="inline-flex items-center rounded-full bg-white/80 backdrop-blur-sm px-3 py-1.5 text-sm border border-gray-200/50 shadow-sm">
                 <span className="text-[#FF385C] font-medium mr-1">New</span>
                 <span className="text-gray-800">Simplified property evaluation process</span>
               </div>
@@ -49,14 +59,14 @@ const Home: React.FC = () => {
                 <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-gray-900 leading-tight">
                   Optimize, <span className="text-[#FF385C]">Outperform</span>
                 </h1>
-                <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
+                <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto backdrop-blur-sm bg-white/30 p-4 rounded-lg">
                   Get professional property assessments quickly and easily with our streamlined platform. No hassle, no waiting.
                 </p>
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
-                  className="bg-[#FF385C] hover:bg-[#e0334f] text-white rounded-md py-6 px-8 text-lg shadow-md"
+                  className="bg-[#FF385C] hover:bg-[#e0334f] text-white rounded-md py-6 px-8 text-lg shadow-md backdrop-blur-sm bg-[#FF385C]/90"
                   onClick={() => document.getElementById('property-form')?.scrollIntoView({ behavior: 'smooth' })}
                 >
                   Start Your Evaluation
@@ -65,7 +75,7 @@ const Home: React.FC = () => {
                 
                 <Button 
                   variant="outline"
-                  className="border-gray-300 bg-white text-gray-800 hover:bg-gray-50 py-6 px-8 text-lg"
+                  className="border-gray-300 bg-white/70 backdrop-blur-sm text-gray-800 hover:bg-gray-50 py-6 px-8 text-lg"
                   onClick={() => navigate('/about')}
                 >
                   Learn More

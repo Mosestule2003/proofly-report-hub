@@ -103,4 +103,17 @@
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-[#FF385C] to-[#e0334f];
   }
+
+  /* Glassmorphism utilities */
+  .glass {
+    @apply backdrop-blur-md bg-white/30 border border-white/20;
+  }
+
+  .glass-dark {
+    @apply backdrop-blur-md bg-black/30 border border-white/10;
+  }
+
+  .glass-card {
+    @apply backdrop-blur-md bg-white/70 border border-white/30 shadow-lg;
+  }
 }
