@@ -54,13 +54,14 @@ TableFooter.displayName = "TableFooter"
 
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
-  React.HTMLAttributes<HTMLTableRowElement> & { selected?: boolean }
->(({ className, selected, ...props }, ref) => (
+  React.HTMLAttributes<HTMLTableRowElement> & { selected?: boolean; clickable?: boolean }
+>(({ className, selected, clickable, ...props }, ref) => (
   <tr
     ref={ref}
     className={cn(
       "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
       selected && "bg-primary/5 border-l-4 border-l-primary",
+      clickable && "cursor-pointer",
       className
     )}
     {...props}

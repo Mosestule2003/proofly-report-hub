@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Order, api } from '@/services/api';
+import { Order, Property, api } from '@/services/api';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminTopBar from '@/components/admin/AdminTopBar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -21,7 +21,10 @@ import {
   Calendar,
   Search as SearchIcon,
   FileText,
-  RefreshCw
+  RefreshCw,
+  X,
+  ChevronsUpDown,
+  ArrowLeft
 } from 'lucide-react';
 import {
   Select,
@@ -38,6 +41,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from '@/components/ui/separator';
+import { OrderProcessingModalWrapper } from '@/components/OrderProcessingModalWrapper';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 // Define number of items per page
 const ITEMS_PER_PAGE = 10;
@@ -60,6 +73,10 @@ const AdminOrders: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('30days');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Order detail dialog state
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [showOrderDetail, setShowOrderDetail] = useState(false);
 
   // Protect route - only admins can access
   useEffect(() => {
@@ -212,8 +229,9 @@ const AdminOrders: React.FC = () => {
   };
 
   // View details handler
-  const handleViewDetails = (orderId: string) => {
-    navigate(`/admin/orders/${orderId}`);
+  const handleViewDetails = (order: Order) => {
+    setSelectedOrder(order);
+    setShowOrderDetail(true);
   };
   
   // Advance order status handler
@@ -221,6 +239,14 @@ const AdminOrders: React.FC = () => {
     try {
       await api.advanceOrderStep(orderId);
       toast.success("Order status advanced successfully");
+      
+      // If the selected order is being advanced, update it
+      if (selectedOrder && selectedOrder.id === orderId) {
+        const updatedOrder = orders.find(o => o.id === orderId);
+        if (updatedOrder) {
+          setSelectedOrder(updatedOrder);
+        }
+      }
     } catch (error) {
       console.error('Error advancing order status:', error);
       toast.error("Failed to advance order status");
@@ -295,6 +321,12 @@ const AdminOrders: React.FC = () => {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  // Close the order detail dialog
+  const handleCloseOrderDetail = () => {
+    setShowOrderDetail(false);
+    setSelectedOrder(null);
   };
 
   return (
@@ -480,8 +512,10 @@ const AdminOrders: React.FC = () => {
                             <TableRow 
                               key={order.id}
                               selected={selectedOrders.includes(order.id)}
+                              clickable
+                              onClick={() => handleViewDetails(order)}
                             >
-                              <TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
                                 <Checkbox 
                                   checked={selectedOrders.includes(order.id)}
                                   onCheckedChange={() => handleToggleOrderSelection(order.id)}
@@ -506,12 +540,15 @@ const AdminOrders: React.FC = () => {
                               <TableCell>
                                 <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
                               </TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex justify-end space-x-1">
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    onClick={() => handleViewDetails(order.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleViewDetails(order);
+                                    }}
                                     title="View details"
                                   >
                                     <Eye className="h-4 w-4" />
@@ -519,7 +556,10 @@ const AdminOrders: React.FC = () => {
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    onClick={() => handleAdvanceOrderStatus(order.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAdvanceOrderStatus(order.id);
+                                    }}
                                     title="Advance status"
                                   >
                                     <Check className="h-4 w-4" />
@@ -527,7 +567,10 @@ const AdminOrders: React.FC = () => {
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    onClick={() => toast.success("View report feature will be implemented soon")}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toast.success("View report feature will be implemented soon");
+                                    }}
                                     title="View report"
                                   >
                                     <FileText className="h-4 w-4" />
@@ -578,6 +621,111 @@ const AdminOrders: React.FC = () => {
           </Card>
         </div>
       </div>
+      
+      {/* Order Detail Dialog */}
+      <Dialog open={showOrderDetail} onOpenChange={setShowOrderDetail}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center">
+              <span>Order Details</span>
+              <Button variant="outline" size="sm" onClick={handleCloseOrderDetail}>
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+            <DialogDescription>
+              Manage and review this order in detail.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedOrder && (
+            <div className="mt-4">
+              <div className="flex flex-wrap justify-between items-start mb-6">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mb-4"
+                  onClick={handleCloseOrderDetail}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Orders
+                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => toast.success("Download report feature will be implemented soon")}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Report
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={() => handleAdvanceOrderStatus(selectedOrder.id)}
+                    disabled={selectedOrder.status === 'Report Ready'}
+                  >
+                    <ChevronsUpDown className="h-4 w-4 mr-2" />
+                    Advance Status
+                  </Button>
+                </div>
+              </div>
+              
+              <OrderProcessingModalWrapper
+                properties={selectedOrder.properties}
+                onComplete={() => {
+                  setShowOrderDetail(false);
+                  setSelectedOrder(null);
+                }}
+                totalPrice={selectedOrder.totalPrice}
+                rush={selectedOrder.rush}
+                orderDetails={{
+                  id: selectedOrder.id,
+                  createdAt: selectedOrder.createdAt,
+                  status: selectedOrder.status,
+                  agentContact: selectedOrder.agentContact,
+                  userId: selectedOrder.userId,
+                  notes: selectedOrder.notes || ''
+                }}
+                isAdminView={true}
+              />
+              
+              {/* Property List */}
+              <div className="mt-6">
+                <h3 className="font-medium mb-2">Properties in this order</h3>
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Address</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedOrder.properties.map((property: Property, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell>{property.address}</TableCell>
+                          <TableCell>{property.type}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(selectedOrder.status)}>
+                              {selectedOrder.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
