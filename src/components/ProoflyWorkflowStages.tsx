@@ -3,12 +3,12 @@ import React from 'react';
 import { 
   Home,
   ShoppingCart, 
-  PhoneCall, 
+  MessageSquare, 
   CheckCircle, 
-  Users, 
+  User, 
   Camera, 
   FileText, 
-  Check 
+  CornerDownRight 
 } from 'lucide-react';
 
 interface StageProps {
@@ -81,7 +81,7 @@ const StageRow: React.FC<StageRowProps> = ({ title, stages }) => {
 };
 
 export const ProoflyWorkflowStages: React.FC = () => {
-  const preparationStages: StageProps[] = [
+  const firstRowStages: StageProps[] = [
     {
       title: "Add a Property",
       description: "Paste address & landlord info → Add to Cart",
@@ -93,14 +93,11 @@ export const ProoflyWorkflowStages: React.FC = () => {
       description: "Review items, note fees, bulk-discount applied",
       icon: ShoppingCart,
       isActive: true
-    }
-  ];
-
-  const startStages: StageProps[] = [
+    },
     {
       title: "AI Outreach In Progress",
       description: "\"Calling Landlords...\" status screen",
-      icon: PhoneCall
+      icon: MessageSquare
     },
     {
       title: "Confirmed Bookings",
@@ -109,11 +106,11 @@ export const ProoflyWorkflowStages: React.FC = () => {
     }
   ];
 
-  const finishStages: StageProps[] = [
+  const secondRowStages: StageProps[] = [
     {
       title: "Local Proofly \"Friend\" Steps In",
       description: "On-ground friend matched to visit",
-      icon: Users
+      icon: User
     },
     {
       title: "Walkthrough & Report",
@@ -134,19 +131,31 @@ export const ProoflyWorkflowStages: React.FC = () => {
         
         {/* Desktop View */}
         <div className="hidden md:block">
-          <StageRow title="Preparation" stages={preparationStages} />
-          <StageRow title="Start" stages={startStages} />
-          <StageRow title="Finish" stages={finishStages} />
+          {/* First Row */}
+          <StageRow title="Preparation & Start" stages={firstRowStages} />
+          
+          {/* Curved Connection Line */}
+          <div className="relative mb-12">
+            <div className="absolute -top-12 left-10 w-16 h-24">
+              <CornerDownRight 
+                className="text-gray-300/80 w-16 h-24" 
+                strokeWidth={1} 
+              />
+            </div>
+          </div>
+          
+          {/* Second Row */}
+          <StageRow title="Finish" stages={secondRowStages} />
         </div>
         
         {/* Mobile View */}
         <div className="md:hidden space-y-8">
           <div className="space-y-4">
-            <h3 className="uppercase text-gray-900 text-sm font-bold">Preparation</h3>
+            <h3 className="uppercase text-gray-900 text-sm font-bold">Preparation & Start</h3>
             <div className="relative pl-8 space-y-8">
               <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-gray-300/50"></div>
               
-              {preparationStages.map((stage, index) => (
+              {firstRowStages.map((stage, index) => (
                 <div key={index} className="flex items-start">
                   <div 
                     className={`
@@ -173,36 +182,12 @@ export const ProoflyWorkflowStages: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="uppercase text-gray-900 text-sm font-bold">Start</h3>
-            <div className="relative pl-8 space-y-8">
-              <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-gray-300/50"></div>
-              
-              {startStages.map((stage, index) => (
-                <div key={index} className="flex items-start">
-                  <div 
-                    className={`
-                      absolute left-0 w-6 h-6 rounded-full flex items-center justify-center
-                      ${stage.isCompleted ? 'bg-[#FF5A5F]' : stage.isActive ? 'bg-[#FF5A5F]' : 'bg-transparent border-2 border-gray-400/50'}
-                    `}
-                  >
-                    {stage.isCompleted ? (
-                      <Check className="w-3 h-3 text-white" />
-                    ) : (
-                      <stage.icon className={`w-3 h-3 ${stage.isActive ? 'text-white' : 'text-gray-600'}`} />
-                    )}
-                  </div>
-                  <div className="ml-6">
-                    <h4 className={`text-sm font-semibold uppercase ${stage.isActive ? 'text-gray-900' : 'text-gray-800'}`}>
-                      {stage.title}
-                    </h4>
-                    <p className={`text-xs mt-1 ${stage.isActive ? 'text-gray-800' : 'text-gray-600'}`}>
-                      {stage.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Curved Connection for Mobile */}
+          <div className="relative ml-3 h-8 w-8">
+            <CornerDownRight 
+              className="text-gray-300/80 w-8 h-8" 
+              strokeWidth={1.5} 
+            />
           </div>
 
           <div className="space-y-4">
@@ -210,7 +195,7 @@ export const ProoflyWorkflowStages: React.FC = () => {
             <div className="relative pl-8 space-y-8">
               <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-gray-300/50"></div>
               
-              {finishStages.map((stage, index) => (
+              {secondRowStages.map((stage, index) => (
                 <div key={index} className="flex items-start">
                   <div 
                     className={`
