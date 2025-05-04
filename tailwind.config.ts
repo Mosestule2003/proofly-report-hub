@@ -1,3 +1,4 @@
+
 import { type Config } from "tailwindcss";
 import { fontFamily } from "tailwindcss/defaultTheme";
 
@@ -29,7 +30,7 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
+          DEFAULT: "#FF385C",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
@@ -45,7 +46,7 @@ export default {
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
+          DEFAULT: "#FF385C",
           foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
@@ -64,9 +65,9 @@ export default {
           accent: "hsl(var(--sidebar-accent))",
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
         },
-        // Adding the missing Proofly color definitions
-        "proofly-purple": "#9b87f5",
-        "proofly-dark-purple": "#7055f5",
+        // Updated brand color, replaced proofly-purple with proofly-red
+        "proofly-red": "#FF385C",
+        "proofly-dark-red": "#e0334f",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -84,7 +85,7 @@ export default {
         },
         "highlight": {
           '0%, 100%': { backgroundColor: 'transparent' },
-          '50%': { backgroundColor: 'hsl(var(--primary) / 0.15)' },
+          '50%': { backgroundColor: 'rgba(255, 56, 92, 0.15)' },
         }
       },
       animation: {

@@ -1,398 +1,237 @@
 
-import React, { useState, FormEvent } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useCart } from '@/context/CartContext';
-import { Search, Building, ShieldCheck, Phone, MapPin, Loader2, CloudRain } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
-import AddressAutocomplete from '@/components/AddressAutocomplete';
-import ProoflyRoadmap from '@/components/ProoflyRoadmap';
+import { useToast } from '@/hooks/use-toast';
+import { useCart } from '@/context/CartContext';
+import { ArrowRight, Check, Laptop, MapPin, PieChart, Shield, Star, Users } from 'lucide-react';
+import { PropertyForm } from '@/components/PropertyForm';
+import { ProoflyRoadmap } from '@/components/ProoflyRoadmap';
 
 const Home: React.FC = () => {
-  const { addProperty } = useCart();
-  const [propertyInput, setPropertyInput] = useState('');
-  const [formattedAddress, setFormattedAddress] = useState('');
-  const [agentName, setAgentName] = useState('');
-  const [agentEmail, setAgentEmail] = useState('');
-  const [agentPhone, setAgentPhone] = useState('');
-  const [agentCompany, setAgentCompany] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
-  const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null);
-  const [weatherMultiplier, setWeatherMultiplier] = useState<number>(1.0);
-  const [isValidAddress, setIsValidAddress] = useState(false);
-  
-  // Simulate weather check
-  const simulateWeatherCheck = (lat: number, lng: number) => {
-    // In a real implementation, this would call a weather API
-    // For demo purposes, randomly assign a weather condition
-    const randomCondition = Math.random();
-    
-    if (randomCondition > 0.9) {
-      // Extreme weather - 10% chance
-      setWeatherMultiplier(1.5);
-      toast.info("Note: Extreme weather conditions detected at this location (1.5× multiplier applies)");
-    } else if (randomCondition > 0.7) {
-      // Severe weather - 20% chance
-      setWeatherMultiplier(1.2);
-      toast.info("Note: Rainy conditions detected at this location (1.2× multiplier applies)");
-    } else {
-      // Normal weather - 70% chance
-      setWeatherMultiplier(1.0);
-    }
-  };
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
 
-  // Handle address selection from autocomplete
-  const handleAddressSelected = (address: string, coords: {lat: number, lng: number} | null, formatted: string) => {
-    setPropertyInput(address);
-    setFormattedAddress(formatted);
-    validateField('property', address);
-    
-    if (coords) {
-      setCoordinates(coords);
-      setIsValidAddress(true);
-      simulateWeatherCheck(coords.lat, coords.lng);
-    } else {
-      setIsValidAddress(true); // Still mark as valid even without coords
-      setCoordinates({ lat: 34.0522, lng: -118.2437 }); // Default coordinates
-    }
-  };
-
-  // Validate a specific field
-  const validateField = (field: string, value: string): boolean => {
-    const newErrors = { ...errors };
-    
-    switch (field) {
-      case 'property':
-        if (!value.trim()) {
-          newErrors.property = "Property address is required";
-        } else {
-          delete newErrors.property;
-        }
-        break;
-      case 'agentName':
-        if (!value.trim()) {
-          newErrors.agentName = "Agent/landlord name is required";
-        } else {
-          delete newErrors.agentName;
-        }
-        break;
-      case 'agentEmail':
-        if (!value.trim()) {
-          newErrors.agentEmail = "Email is required";
-        } else if (!/\S+@\S+\.\S+/.test(value)) {
-          newErrors.agentEmail = "Email is invalid";
-        } else {
-          delete newErrors.agentEmail;
-        }
-        break;
-      case 'agentPhone':
-        if (!value.trim()) {
-          newErrors.agentPhone = "Phone number is required";
-        } else {
-          delete newErrors.agentPhone;
-        }
-        break;
-    }
-    
-    setErrors(newErrors);
-    return !newErrors[field];
-  };
-
-  // Validate the entire form
-  const validateForm = (): boolean => {
-    const newErrors: {[key: string]: string} = {};
-    
-    if (!propertyInput.trim()) {
-      newErrors.property = "Property address is required";
-    }
-    
-    if (!agentName.trim()) {
-      newErrors.agentName = "Agent/landlord name is required";
-    }
-    
-    if (!agentEmail.trim()) {
-      newErrors.agentEmail = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(agentEmail)) {
-      newErrors.agentEmail = "Email is invalid";
-    }
-    
-    if (!agentPhone.trim()) {
-      newErrors.agentPhone = "Phone number is required";
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleAddToCart = async (e: FormEvent) => {
+  const handleDemoRequest = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    setIsLoading(true);
-    
-    // Collect landlord info since it's required
-    const landlordInfo = {
-      name: agentName,
-      email: agentEmail,
-      phone: agentPhone,
-      company: agentCompany || undefined
-    };
-    
-    try {
-      // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Ensure we have coordinates
-      const propertyCoordinates = coordinates || { lat: 34.0522, lng: -118.2437 };
-      
-      addProperty({
-        id: crypto.randomUUID(),
-        address: propertyInput,
-        description: '',
-        price: 25, // Base price - will be recalculated in CartContext
-        landlordInfo, // Always include landlord info
-        coordinates: propertyCoordinates, // Use coordinates or fallback
-        pricing: {
-          baseFee: 25,
-          distanceSurcharge: 0, // Will be calculated in CartContext
-          weatherMultiplier,
-          finalPrice: 25 * weatherMultiplier // Will be recalculated in CartContext
-        }
+    if (!email.includes('@')) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive"
       });
-      
-      // Show success notification with pricing information
-      toast.success("Property added to cart", {
-        description: `Base fee: $25 ${weatherMultiplier > 1 ? `• Weather adjustment: ${weatherMultiplier}×` : ''}`
-      });
-      
-      // Reset form
-      setPropertyInput('');
-      setFormattedAddress('');
-      setAgentName('');
-      setAgentEmail('');
-      setAgentPhone('');
-      setAgentCompany('');
-      setCoordinates(null);
-      setIsValidAddress(false);
-      setWeatherMultiplier(1.0);
-      
-    } catch (error) {
-      toast.error("Failed to add property", {
-        description: "Please try again"
-      });
-      console.error("Error adding property:", error);
-    } finally {
-      setIsLoading(false);
+      return;
     }
+    
+    toast({
+      title: "Demo Request Received",
+      description: "We'll be in touch with you soon!"
+    });
+    setEmail('');
   };
-  
+
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-      <section className="flex-1 flex flex-col items-center justify-center p-6 md:p-10 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-3xl mx-auto"
-        >
-          <h1 className="text-4xl md:text-6xl font-bold gradient-text mb-6">
-            Property Evaluation Made Easy
-          </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8">
-            Get expert property evaluations with detailed reports in just a few simple steps.
-          </p>
-          
-          <form onSubmit={handleAddToCart} className="w-full max-w-2xl mx-auto">
-            <div className="bg-card border rounded-lg shadow-sm p-6">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="property" className="text-base font-medium">
-                    Property Address
-                  </Label>
-                  
-                  <AddressAutocomplete
-                    id="property"
-                    placeholder="Enter a complete property address"
-                    value={propertyInput}
-                    onChange={(value) => {
-                      setPropertyInput(value);
-                      if (!value) {
-                        setIsValidAddress(false);
-                      }
-                      validateField('property', value);
-                    }}
-                    onAddressSelected={handleAddressSelected}
-                    hasError={!!errors.property}
-                    errorMessage={errors.property}
-                  />
-                  
-                  {formattedAddress && (
-                    <div className="mt-2 p-2 bg-primary/5 border rounded text-sm">
-                      <p className="font-medium">Selected address:</p>
-                      <p>{formattedAddress}</p>
-                      {coordinates && (
-                        <div className="mt-1 flex items-center text-xs text-muted-foreground">
-                          <span>Coordinates: {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}</span>
-                          {weatherMultiplier > 1 && (
-                            <div className="ml-2 flex items-center text-amber-600">
-                              <CloudRain className="h-3 w-3 mr-1" />
-                              <span>{weatherMultiplier === 1.5 ? "Extreme weather" : "Rainy conditions"} ({weatherMultiplier}×)</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Landlord information fields - now always visible */}
-                <div className="space-y-4 mt-2 p-4 bg-muted/30 rounded-lg border">
-                  <h3 className="font-medium">Landlord Information (Required)</h3>
-                  <Separator />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="agentName">
-                        Name <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="agentName"
-                        placeholder="Full name"
-                        value={agentName}
-                        onChange={(e) => {
-                          setAgentName(e.target.value);
-                          validateField('agentName', e.target.value);
-                        }}
-                        className={errors.agentName ? 'border-red-500' : ''}
-                      />
-                      {errors.agentName && <p className="text-sm text-red-500 mt-1">{errors.agentName}</p>}
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="agentEmail">
-                        Email <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="agentEmail"
-                        type="email"
-                        placeholder="email@example.com"
-                        value={agentEmail}
-                        onChange={(e) => {
-                          setAgentEmail(e.target.value);
-                          validateField('agentEmail', e.target.value);
-                        }}
-                        className={errors.agentEmail ? 'border-red-500' : ''}
-                      />
-                      {errors.agentEmail && <p className="text-sm text-red-500 mt-1">{errors.agentEmail}</p>}
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="agentPhone">
-                        Phone <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="agentPhone"
-                        placeholder="555-123-4567"
-                        value={agentPhone}
-                        onChange={(e) => {
-                          setAgentPhone(e.target.value);
-                          validateField('agentPhone', e.target.value);
-                        }}
-                        className={errors.agentPhone ? 'border-red-500' : ''}
-                      />
-                      {errors.agentPhone && <p className="text-sm text-red-500 mt-1">{errors.agentPhone}</p>}
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="agentCompany">
-                        Company (Optional)
-                      </Label>
-                      <Input
-                        id="agentCompany"
-                        placeholder="Company name"
-                        value={agentCompany}
-                        onChange={(e) => setAgentCompany(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
+    <div className="flex flex-col min-h-screen">
+      {/* Hero Section */}
+      <section className="bg-white px-4 md:px-6 py-16 md:py-24">
+        <div className="container mx-auto max-w-7xl">
+          <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-center">
+            <div className="flex-1 space-y-6">
+              <div className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm">
+                <span className="text-[#FF385C] font-medium mr-1">New</span>
+                <span className="text-gray-800">Simplified property evaluation process</span>
               </div>
               
-              <Button 
-                type="submit" 
-                size="lg" 
-                className="mt-6 w-full"
-                disabled={isLoading || !propertyInput.trim() || !agentName.trim() || !agentEmail.trim() || !agentPhone.trim()}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Add to Cart"
-                )}
-              </Button>
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900">
+                Property Evaluation <span className="block text-[#FF385C]">Made Easy</span>
+              </h1>
               
-              {propertyInput && (
-                <div className="mt-2 text-center text-xs text-muted-foreground">
-                  Base fee: $25 {weatherMultiplier > 1 ? `• Weather adjustment: ${weatherMultiplier}×` : ''}
-                </div>
-              )}
+              <p className="text-xl text-gray-600 max-w-2xl">
+                Get professional property assessments quickly and easily with our streamlined platform. No hassle, no waiting.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button 
+                  className="bg-[#FF385C] hover:bg-[#e0334f] text-white rounded-md py-6 px-8 text-lg"
+                  onClick={() => document.getElementById('property-form')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  Start Your Evaluation
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  className="border-gray-300 bg-white text-gray-800 hover:bg-gray-50 py-6 px-8 text-lg"
+                  onClick={() => navigate('/about')}
+                >
+                  Learn More
+                </Button>
+              </div>
             </div>
-          </form>
-        </motion.div>
+            
+            <div className="flex-1 relative">
+              <div className="bg-gray-100 rounded-2xl p-6 md:p-8 relative z-10">
+                <img 
+                  src="/lovable-uploads/1ee7abbd-eb0a-4324-a3d3-e0e7b3ed2a16.png" 
+                  alt="Property evaluation illustration" 
+                  className="w-full h-auto rounded-lg shadow-lg"
+                />
+                <div className="absolute -right-4 -bottom-4 bg-[#FF385C] text-white rounded-full p-4 shadow-lg">
+                  <Star className="h-8 w-8" />
+                </div>
+              </div>
+              <div className="absolute -z-10 bg-[#FF385C]/10 w-full h-full rounded-2xl -right-6 -bottom-6"></div>
+            </div>
+          </div>
+        </div>
       </section>
-      
-      <section className="bg-secondary py-12 px-6">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-10">How It Works</h2>
-          
-          {/* Replace the grid with the ProoflyRoadmap component */}
-          <ProoflyRoadmap />
+
+      {/* Statistics Section */}
+      <section className="bg-gray-50 px-4 py-16">
+        <div className="container mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="border-0 shadow-sm bg-white p-8">
+              <CardContent className="p-0 space-y-2">
+                <h3 className="text-5xl font-bold text-[#FF385C]">90%</h3>
+                <p className="text-xl text-gray-700">of our clients come back for repeat evaluations</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-0 shadow-sm bg-white p-8">
+              <CardContent className="p-0 space-y-2">
+                <h3 className="text-5xl font-bold text-[#FF385C]">2x</h3>
+                <p className="text-xl text-gray-700">faster than traditional property evaluation services</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-0 shadow-sm bg-white p-8">
+              <CardContent className="p-0 space-y-2">
+                <h3 className="text-5xl font-bold text-[#FF385C]">50%</h3>
+                <p className="text-xl text-gray-700">more comprehensive reports than competitors</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
       
-      <section className="py-12 px-6">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-4">Future Proofly Features</h2>
-          <p className="text-center text-muted-foreground mb-10">
-            We're constantly improving our platform to serve you better
-          </p>
+      {/* Property Form Section */}
+      <section id="property-form" className="bg-white px-4 py-16">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Start Your Property Evaluation</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Fill out the form below to begin your property evaluation process. Our experts will take care of the rest.
+            </p>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="border p-6 rounded-lg">
-              <h3 className="text-xl font-semibold mb-2">Landlord Dashboards</h3>
-              <p className="text-muted-foreground">
-                Manage multiple properties and tenant evaluations from a single dashboard.
-              </p>
-            </div>
+          <div className="max-w-3xl mx-auto">
+            <PropertyForm />
+          </div>
+        </div>
+      </section>
+      
+      {/* How It Works Section */}
+      <section className="bg-gray-50 px-4 py-16">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">How It Works</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Our streamlined process makes property evaluation simple and efficient
+            </p>
+          </div>
+          
+          <div className="mt-12">
+            <ProoflyRoadmap />
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="bg-white px-4 py-16">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Future Features</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              We're constantly improving our platform to better serve your needs
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <Card className="border border-gray-200 hover:border-[#FF385C] transition-colors rounded-xl overflow-hidden">
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className="rounded-full bg-[#FF385C]/10 p-4 mb-4">
+                  <Users className="h-8 w-8 text-[#FF385C]" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Landlord Dashboards</h3>
+                <p className="text-gray-600">Comprehensive analytics and management tools for property owners</p>
+              </CardContent>
+            </Card>
             
-            <div className="border p-6 rounded-lg">
-              <h3 className="text-xl font-semibold mb-2">Escrow Deposit System</h3>
-              <p className="text-muted-foreground">
-                Securely handle move-in funds with our upcoming escrow payment system.
-              </p>
-            </div>
+            <Card className="border border-gray-200 hover:border-[#FF385C] transition-colors rounded-xl overflow-hidden">
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className="rounded-full bg-[#FF385C]/10 p-4 mb-4">
+                  <Shield className="h-8 w-8 text-[#FF385C]" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Escrow Deposit System</h3>
+                <p className="text-gray-600">Secure payment processing and escrow services for transactions</p>
+              </CardContent>
+            </Card>
             
-            <div className="border p-6 rounded-lg">
-              <h3 className="text-xl font-semibold mb-2">Full Onboarding</h3>
-              <p className="text-muted-foreground">
-                Complete property listing, lease signing, and verification workflows.
-              </p>
-            </div>
+            <Card className="border border-gray-200 hover:border-[#FF385C] transition-colors rounded-xl overflow-hidden">
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className="rounded-full bg-[#FF385C]/10 p-4 mb-4">
+                  <Laptop className="h-8 w-8 text-[#FF385C]" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Full Onboarding</h3>
+                <p className="text-gray-600">Seamless onboarding experience with guided setup assistance</p>
+              </CardContent>
+            </Card>
             
-            <div className="border p-6 rounded-lg">
-              <h3 className="text-xl font-semibold mb-2">Automated Reporting</h3>
-              <p className="text-muted-foreground">
-                AI-assisted property assessment and reporting for faster turnaround.
-              </p>
-            </div>
+            <Card className="border border-gray-200 hover:border-[#FF385C] transition-colors rounded-xl overflow-hidden">
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className="rounded-full bg-[#FF385C]/10 p-4 mb-4">
+                  <PieChart className="h-8 w-8 text-[#FF385C]" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Automated Reporting</h3>
+                <p className="text-gray-600">Intelligent report generation with customizable templates</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-gray-900 px-4 py-16 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute w-full h-full bg-[#FF385C] transform rotate-12 translate-x-1/2 translate-y-1/4"></div>
+        </div>
+        <div className="container mx-auto max-w-7xl relative z-10">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Get Started?</h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Join thousands of satisfied clients who trust Proofly for their property evaluation needs
+            </p>
+          </div>
+          
+          <div className="max-w-md mx-auto">
+            <form onSubmit={handleDemoRequest} className="flex flex-col sm:flex-row gap-4">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                className="bg-white/10 border-gray-700 text-white placeholder:text-gray-400 h-12"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Button 
+                type="submit" 
+                className="bg-[#FF385C] hover:bg-[#e0334f] text-white h-12"
+              >
+                Request a Demo
+              </Button>
+            </form>
           </div>
         </div>
       </section>
