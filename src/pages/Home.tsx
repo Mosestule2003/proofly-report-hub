@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -74,22 +75,6 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Property Form Section */}
-      <section id="property-form" className="bg-white px-4 py-16">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Start Your Property Evaluation</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Fill out the form below to begin your property evaluation process. Our experts will take care of the rest.
-            </p>
-          </div>
-          
-          <div className="max-w-3xl mx-auto">
-            <PropertyForm />
-          </div>
-        </div>
-      </section>
-
       {/* Statistics Section */}
       <section className="bg-gray-50 px-4 py-16">
         <div className="container mx-auto max-w-7xl">
@@ -118,6 +103,22 @@ const Home: React.FC = () => {
         </div>
       </section>
       
+      {/* Property Form Section */}
+      <section id="property-form" className="bg-white px-4 py-16">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Start Your Property Evaluation</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Fill out the form below to begin your property evaluation process. Our experts will take care of the rest.
+            </p>
+          </div>
+          
+          <div className="max-w-3xl mx-auto">
+            <PropertyForm />
+          </div>
+        </div>
+      </section>
+
       {/* How It Works Section */}
       <section className="bg-gray-50 px-4 py-16">
         <div className="container mx-auto max-w-7xl">
