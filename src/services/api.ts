@@ -1,7 +1,10 @@
 import { toast } from 'sonner';
-import { Property, LandlordInfo } from '@/context/CartContext';
+import { Property as CartProperty, LandlordInfo } from '@/context/CartContext';
 import { AppNotification } from '@/components/NotificationBell';
 import { Evaluator } from '@/components/EvaluatorProfile';
+
+// Re-export Property type from CartContext
+export type { Property } from '@/context/CartContext';
 
 // Define User type locally to avoid circular dependency with AuthContext
 export type User = {
@@ -34,7 +37,7 @@ export type OrderStepStatus =
 export type Order = {
   id: string;
   userId: string;
-  properties: Property[];
+  properties: CartProperty[];
   totalPrice: number;
   discount: number;
   status: OrderStatus;
@@ -44,6 +47,8 @@ export type Order = {
   currentPropertyIndex?: number;
   evaluatorLocation?: { lat: number; lng: number };
   createdAt: string;
+  rush?: boolean;
+  notes?: string;
 };
 
 export type Report = {
@@ -170,7 +175,7 @@ export const api = {
   // Orders
   createOrder: async (
     userId: string, 
-    properties: Property[], 
+    properties: CartProperty[], 
     totalPrice: number, 
     discount: number,
     agentContact?: AgentContact
