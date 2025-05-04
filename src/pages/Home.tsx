@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -38,8 +37,8 @@ const Home: React.FC = () => {
       {/* Hero Section */}
       <section className="bg-white px-4 md:px-6 py-16 md:py-24">
         <div className="container mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-center">
-            <div className="flex-1 space-y-6">
+          <div className="flex flex-col items-center">
+            <div className="space-y-6 max-w-3xl mx-auto text-center">
               <div className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm">
                 <span className="text-[#FF385C] font-medium mr-1">New</span>
                 <span className="text-gray-800">Simplified property evaluation process</span>
@@ -49,11 +48,11 @@ const Home: React.FC = () => {
                 Property Evaluation <span className="block text-[#FF385C]">Made Easy</span>
               </h1>
               
-              <p className="text-xl text-gray-600 max-w-2xl">
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                 Get professional property assessments quickly and easily with our streamlined platform. No hassle, no waiting.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
                   className="bg-[#FF385C] hover:bg-[#e0334f] text-white rounded-md py-6 px-8 text-lg"
                   onClick={() => document.getElementById('property-form')?.scrollIntoView({ behavior: 'smooth' })}
@@ -70,20 +69,6 @@ const Home: React.FC = () => {
                   Learn More
                 </Button>
               </div>
-            </div>
-            
-            <div className="flex-1 relative">
-              <div className="bg-gray-100 rounded-2xl p-6 md:p-8 relative z-10">
-                <img 
-                  src="/lovable-uploads/1ee7abbd-eb0a-4324-a3d3-e0e7b3ed2a16.png" 
-                  alt="Property evaluation illustration" 
-                  className="w-full h-auto rounded-lg shadow-lg"
-                />
-                <div className="absolute -right-4 -bottom-4 bg-[#FF385C] text-white rounded-full p-4 shadow-lg">
-                  <Star className="h-8 w-8" />
-                </div>
-              </div>
-              <div className="absolute -z-10 bg-[#FF385C]/10 w-full h-full rounded-2xl -right-6 -bottom-6"></div>
             </div>
           </div>
         </div>
