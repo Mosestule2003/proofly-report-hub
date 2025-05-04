@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/context/CartContext';
 import { ArrowRight, Check, Laptop, MapPin, PieChart, Shield, Star, Users } from 'lucide-react';
 import { PropertyForm } from '@/components/PropertyForm';
-import { ProoflyRoadmap } from '@/components/ProoflyRoadmap';
+import { ProoflyWorkflowStages } from '@/components/ProoflyWorkflowStages';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -127,8 +127,8 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* How It Works Section with Enhanced Design */}
-      <section className="bg-gray-50 px-4 py-20">
+      {/* How It Works Section - Replaced with ProoflyWorkflowStages */}
+      <section className="px-4 py-20">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">How It Works</h2>
@@ -138,7 +138,7 @@ const Home: React.FC = () => {
           </div>
           
           <div className="mt-12">
-            <ProoflyRoadmap />
+            <ProoflyWorkflowStages />
           </div>
         </div>
       </section>
@@ -242,7 +242,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      <style>{`
+      <style jsx>{`
         .feature-card {
           position: relative;
         }

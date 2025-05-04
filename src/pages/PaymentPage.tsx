@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -341,7 +340,7 @@ const PaymentPage: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 Additional fees based on property distance:
               </p>
-              <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+              <div className="grid grid-cols-4 gap-2 mt-2">
                 <div className="p-2 border rounded-md">
                   <span className="font-medium">Zone A (0-5 km):</span> +$0
                 </div>
@@ -352,7 +351,7 @@ const PaymentPage: React.FC = () => {
                   <span className="font-medium">Zone C (10-15 km):</span> +$6
                 </div>
                 <div className="p-2 border rounded-md">
-                  <span className="font-medium">Zone D (>15 km):</span> +$9
+                  <span className="font-medium">Zone D (&gt;15 km):</span> +$9
                 </div>
               </div>
             </div>
