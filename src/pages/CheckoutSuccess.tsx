@@ -1,202 +1,208 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Check, Calendar, CreditCard, Clock, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, ArrowRight } from 'lucide-react';
-import { api, Order } from '@/services/api';
-import OrderProcessingModal from '@/components/OrderProcessingModal';
-import { Property } from '@/context/CartContext';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { OrderProcessingModalWrapper } from '@/components/OrderProcessingModalWrapper';
+
+// Define the order interface
+interface Property {
+  id: string;
+  address: string;
+  zipCode: string;
+  city: string;
+  price: number;
+  distanceTier?: string;
+}
+
+interface Order {
+  id: string;
+  properties: Property[];
+  totalPrice: number;
+  discount?: number;
+  surge?: boolean;
+  // We'll handle rushBooking in the component without needing it in the interface
+}
+
+const SuccessItem: React.FC<{ icon: LucideIcon; title: string; description: string }> = ({
+  icon: Icon,
+  title,
+  description,
+}) => (
+  <div className="flex items-start space-x-4">
+    <div className="bg-green-50 p-2 rounded-full">
+      <Icon className="h-5 w-5 text-green-500" />
+    </div>
+    <div>
+      <h3 className="font-medium text-gray-900">{title}</h3>
+      <p className="text-sm text-gray-500">{description}</p>
+    </div>
+  </div>
+);
 
 const CheckoutSuccess: React.FC = () => {
-  const navigate = useNavigate();
   const { orderId } = useParams<{ orderId: string }>();
-  const [order, setOrder] = useState<Order | null>(null);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [showProcessing, setShowProcessing] = useState(true);
-  
-  useEffect(() => {
-    const loadOrder = async () => {
-      if (!orderId) return;
-      
-      try {
-        const orderData = await api.getOrderById(orderId);
-        if (orderData) {
-          setOrder(orderData);
-        }
-      } catch (error) {
-        console.error('Error loading order:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadOrder();
-  }, [orderId]);
-  
-  const handleProcessingComplete = async () => {
-    setShowProcessing(false);
-    
-    // Update order status to "Report Ready" (simulated)
-    if (order && orderId) {
-      try {
-        // Update the order to Report Ready status
-        await api.updateOrderStatus(orderId, 'Report Ready');
-        
-        // Create a simple mock report for this order
-        const mockReport = {
-          orderId: orderId,
-          comments: "This is an automatically generated report based on the property evaluation.\n\nThe property appears to be in good condition overall. Location is convenient with access to public transportation and amenities. Interior space is well maintained with updated fixtures. Some minor cosmetic issues were noted but nothing structural or concerning.",
-          imageUrl: "https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?w=1200",
-          videoUrl: "https://example.com/property-video.mp4", 
-          createdAt: new Date().toISOString()
-        };
-        
-        await api.createReportForOrder(orderId, mockReport);
-        
-        // Refresh order data to show the updated status
-        const updatedOrder = await api.getOrderById(orderId);
-        if (updatedOrder) {
-          setOrder(updatedOrder);
-        }
-        
-        console.log('Order updated and report created successfully');
-      } catch (err) {
-        console.error('Error updating order status:', err);
-      }
-    }
-  };
-  
-  if (isLoading) {
-    return (
-      <div className="container max-w-4xl py-12 text-center">
-        <div className="flex flex-col items-center justify-center p-8">
-          <p className="text-lg text-muted-foreground">Loading order details...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  if (!order) {
-    return (
-      <div className="container max-w-4xl py-12">
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Order Not Found</CardTitle>
-            <CardDescription>
-              We couldn't find the order details. Please check the URL or contact support.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="flex justify-center">
-            <Button onClick={() => navigate('/')}>
-              Return to Home
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
-  
-  // Ensure all properties have an id and price (required for OrderProcessingModal)
-  const propertiesWithIds = order?.properties.map(prop => ({
-    id: prop.id || crypto.randomUUID(),
-    address: prop.address,
-    description: prop.description || '',
-    price: prop.price || 0,
-    city: prop.city || 'vancouver',
-    proximityZone: prop.proximityZone || 'A',
-    landlordInfo: prop.landlordInfo // Ensure landlord info is included for outreach
-  })) as Property[] || [];
+  const [order, setOrder] = useState<Order | null>(null);
 
-  // Calculate the total price for the properties
-  const totalPrice = order?.totalPrice || 0;
-  
-  return (
-    <>
-      {showProcessing && (
-        <OrderProcessingModal 
-          properties={propertiesWithIds} 
-          onComplete={handleProcessingComplete} 
-          totalPrice={totalPrice}
-          rush={order?.rushBooking || false}
+  // This simulates fetching the order details
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Mock order data based on URL params
+      const totalPrice = parseFloat(searchParams.get('total') || '0');
+      const mockOrder: Order = {
+        id: orderId || 'unknown',
+        properties: [
+          {
+            id: '1',
+            address: '123 Main St',
+            zipCode: 'V2C 1T1',
+            city: 'Kamloops',
+            price: totalPrice * 0.6,
+            distanceTier: 'Zone A'
+          },
+          {
+            id: '2',
+            address: '456 Elm St',
+            zipCode: 'V2C 2G8',
+            city: 'Kamloops',
+            price: totalPrice * 0.4,
+            distanceTier: 'Zone B'
+          }
+        ],
+        totalPrice,
+        discount: totalPrice > 50 ? 10 : undefined,
+        surge: Math.random() > 0.5
+      };
+      setOrder(mockOrder);
+      setIsLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [orderId, searchParams]);
+
+  const handleComplete = async () => {
+    navigate('/dashboard');
+  };
+
+  const rushBooking = searchParams.get('rush') === 'true';
+
+  if (isLoading || !order) {
+    return (
+      <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[calc(100vh-64px)]">
+        <OrderProcessingModalWrapper
+          properties={[]}
+          onComplete={handleComplete}
+          totalPrice={0}
         />
-      )}
-      
-      <div className="container max-w-4xl py-12">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <CheckCircle className="h-16 w-16 text-green-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+          <Check className="h-8 w-8 text-green-600" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900">Booking Confirmed!</h1>
+        <p className="text-gray-600 mt-2">
+          Your order #{orderId} has been successfully placed.
+        </p>
+      </div>
+
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Booking Summary</CardTitle>
+          <CardDescription>Review your property evaluation details</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <SuccessItem 
+              icon={Calendar}
+              title="Evaluation Schedule"
+              description={rushBooking ? "Within 24 hours (Rush)" : "Within 3-5 business days"}
+            />
+            <SuccessItem 
+              icon={CreditCard}
+              title="Payment"
+              description={`$${order.totalPrice.toFixed(2)} CAD`}
+            />
+            <SuccessItem 
+              icon={Clock}
+              title="Order Placed"
+              description={new Date().toLocaleString()}
+            />
+          </div>
+
+          <div className="border-t border-gray-200 pt-4">
+            <h3 className="font-medium text-gray-900 mb-3">Properties to be Evaluated:</h3>
+            <div className="space-y-3">
+              {order.properties.map((property) => (
+                <div key={property.id} className="bg-gray-50 p-3 rounded-md">
+                  <h4 className="font-medium">{property.address}</h4>
+                  <p className="text-sm text-gray-600">{property.city}, {property.zipCode}</p>
+                  <div className="flex justify-between mt-1 text-sm">
+                    <span>{property.distanceTier}</span>
+                    <span>${property.price.toFixed(2)} CAD</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <CardTitle className="text-2xl">Order Confirmed!</CardTitle>
-            <CardDescription className="text-lg">
-              Your property evaluation request has been submitted.
-            </CardDescription>
-          </CardHeader>
+          </div>
           
-          <CardContent className="space-y-4">
-            <div className="border rounded-lg p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Order ID</p>
-                  <p className="font-medium">{order?.id.substring(0, 8)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Properties</p>
-                  <p className="font-medium">{order?.properties.length}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Price</p>
-                  <p className="font-medium">${order?.totalPrice.toFixed(2)} CAD</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <p className="font-medium">{showProcessing ? 'Processing' : 'Report Ready'}</p>
-                </div>
-                
-                {/* Show rush booking status if applicable */}
-                {order?.rushBooking && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Rush Booking</p>
-                    <p className="font-medium">Yes (24hr)</p>
-                  </div>
-                )}
-                
-                {/* Show bulk discount if applicable */}
-                {order?.bulkDiscount && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Bulk Discount</p>
-                    <p className="font-medium">10% Applied</p>
-                  </div>
-                )}
-              </div>
+          <div className="border-t border-gray-200 pt-4">
+            <div className="flex justify-between mb-2">
+              <span className="text-gray-600">Subtotal</span>
+              <span>${order.totalPrice.toFixed(2)} CAD</span>
             </div>
-            
-            {!showProcessing && (
-              <div className="bg-muted/30 rounded-lg p-4 text-center">
-                <p className="font-medium mb-2">Good news! Your report is ready.</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  View the details in your dashboard.
-                </p>
-                <Button onClick={() => navigate('/dashboard')}>
-                  View Report
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+            {order.discount && (
+              <div className="flex justify-between mb-2 text-green-600">
+                <span>Bulk Discount</span>
+                <span>-${((order.totalPrice * order.discount) / 100).toFixed(2)} CAD</span>
               </div>
             )}
-          </CardContent>
-          
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => navigate('/')}>
-              Return to Home
-            </Button>
-            <Button onClick={() => navigate('/dashboard')}>
-              Go to Dashboard
-            </Button>
-          </CardFooter>
-        </Card>
+            {rushBooking && (
+              <div className="flex justify-between mb-2">
+                <span>Rush Fee</span>
+                <span>$7.00 CAD</span>
+              </div>
+            )}
+            {order.surge && (
+              <div className="flex justify-between mb-2">
+                <span>Surge Fee</span>
+                <span>$5.00 CAD</span>
+              </div>
+            )}
+            <div className="flex justify-between font-semibold text-lg mt-2 pt-2 border-t border-gray-200">
+              <span>Total</span>
+              <span>${order.totalPrice.toFixed(2)} CAD</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-col sm:flex-row justify-center gap-4">
+        <Button 
+          variant="default"
+          size="lg"
+          onClick={() => navigate('/dashboard')}
+          className="bg-[#FF385C] hover:bg-[#e0334f]"
+        >
+          View Dashboard
+        </Button>
+        <Button 
+          variant="outline"
+          size="lg"
+          onClick={() => navigate('/')}
+        >
+          Back to Home
+        </Button>
       </div>
-    </>
+    </div>
   );
 };
 

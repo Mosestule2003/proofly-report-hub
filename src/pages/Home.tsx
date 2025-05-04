@@ -154,8 +154,8 @@ const Home: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="feature-card">
-              <span className="feature-number">01</span>
+            <div className="feature-card relative">
+              <span className="feature-number absolute top-[-10px] left-[10px] text-2xl font-bold text-[rgba(255,56,92,0.7)] z-10">01</span>
               <Card className="border border-gray-200 hover:border-[#FF385C] transition-all rounded-xl overflow-hidden h-full">
                 <CardContent className="p-6 flex flex-col items-center text-center">
                   <div className="rounded-full bg-[#FF385C]/10 p-4 mb-4">
@@ -167,8 +167,8 @@ const Home: React.FC = () => {
               </Card>
             </div>
             
-            <div className="feature-card">
-              <span className="feature-number">02</span>
+            <div className="feature-card relative">
+              <span className="feature-number absolute top-[-10px] left-[10px] text-2xl font-bold text-[rgba(255,56,92,0.7)] z-10">02</span>
               <Card className="border border-gray-200 hover:border-[#FF385C] transition-all rounded-xl overflow-hidden h-full">
                 <CardContent className="p-6 flex flex-col items-center text-center">
                   <div className="rounded-full bg-[#FF385C]/10 p-4 mb-4">
@@ -180,8 +180,8 @@ const Home: React.FC = () => {
               </Card>
             </div>
             
-            <div className="feature-card">
-              <span className="feature-number">03</span>
+            <div className="feature-card relative">
+              <span className="feature-number absolute top-[-10px] left-[10px] text-2xl font-bold text-[rgba(255,56,92,0.7)] z-10">03</span>
               <Card className="border border-gray-200 hover:border-[#FF385C] transition-all rounded-xl overflow-hidden h-full">
                 <CardContent className="p-6 flex flex-col items-center text-center">
                   <div className="rounded-full bg-[#FF385C]/10 p-4 mb-4">
@@ -193,8 +193,8 @@ const Home: React.FC = () => {
               </Card>
             </div>
             
-            <div className="feature-card">
-              <span className="feature-number">04</span>
+            <div className="feature-card relative">
+              <span className="feature-number absolute top-[-10px] left-[10px] text-2xl font-bold text-[rgba(255,56,92,0.7)] z-10">04</span>
               <Card className="border border-gray-200 hover:border-[#FF385C] transition-all rounded-xl overflow-hidden h-full">
                 <CardContent className="p-6 flex flex-col items-center text-center">
                   <div className="rounded-full bg-[#FF385C]/10 p-4 mb-4">
@@ -241,21 +241,6 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
-
-      <style jsx>{`
-        .feature-card {
-          position: relative;
-        }
-        .feature-number {
-          position: absolute;
-          top: -10px;
-          left: 10px;
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: rgba(255, 56, 92, 0.7);
-          z-index: 10;
-        }
-      `}</style>
     </div>
   );
 };

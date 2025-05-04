@@ -2,39 +2,42 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { Property } from '@/context/CartContext';
-import OrderProcessingModal from '@/components/OrderProcessingModal';
+import { OrderProcessingModalWrapper } from '@/components/OrderProcessingModalWrapper';
 
 const CheckoutProcessing: React.FC = () => {
+  const { cart, totalPrice, clearCart, isRushBooking } = useCart();
   const navigate = useNavigate();
-  const { properties, getTotalPrice, clearCart, isRushBooking } = useCart();
-
-  // Handle processing completion
-  const handleProcessingComplete = () => {
-    // Generate a random order ID for demo purposes
-    const demoOrderId = crypto.randomUUID();
-    
-    // After the order processing is complete, we can clear the cart
-    // since the properties have been "processed"
-    clearCart();
-    
-    navigate(`/checkout/success/${demoOrderId}`);
-  };
 
   useEffect(() => {
-    // If no properties in cart, redirect to home
-    if (properties.length === 0) {
-      navigate('/');
+    if (cart.length === 0) {
+      navigate('/dashboard');
     }
-  }, [properties, navigate]);
+  }, [cart, navigate]);
+
+  const handleComplete = () => {
+    // Transition to success page with query params
+    const orderId = `ORD-${Date.now().toString().slice(-8)}`;
+    const searchParams = new URLSearchParams();
+    searchParams.append('total', totalPrice.toString());
+    
+    navigate(`/checkout/success/${orderId}?${searchParams.toString()}`);
+    
+    // Clear the cart after successful checkout
+    clearCart();
+  };
+
+  if (cart.length === 0) {
+    return null;
+  }
 
   return (
-    <OrderProcessingModal
-      properties={properties}
-      onComplete={handleProcessingComplete}
-      totalPrice={getTotalPrice()}
-      rush={isRushBooking()}
-    />
+    <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[calc(100vh-64px)]">
+      <OrderProcessingModalWrapper
+        properties={cart}
+        onComplete={handleComplete}
+        totalPrice={totalPrice}
+      />
+    </div>
   );
 };
 
