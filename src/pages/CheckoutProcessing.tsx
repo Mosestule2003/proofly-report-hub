@@ -5,20 +5,25 @@ import { useCart } from '@/context/CartContext';
 import { OrderProcessingModalWrapper } from '@/components/OrderProcessingModalWrapper';
 
 const CheckoutProcessing: React.FC = () => {
-  const { cart, totalPrice, clearCart, isRushBooking } = useCart();
+  const { properties, getTotalPrice, clearCart, isRushBooking } = useCart();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (cart.length === 0) {
+    if (properties.length === 0) {
       navigate('/dashboard');
     }
-  }, [cart, navigate]);
+  }, [properties, navigate]);
 
   const handleComplete = () => {
     // Transition to success page with query params
     const orderId = `ORD-${Date.now().toString().slice(-8)}`;
     const searchParams = new URLSearchParams();
-    searchParams.append('total', totalPrice.toString());
+    searchParams.append('total', getTotalPrice().toString());
+    
+    // Add rush parameter if rush booking is enabled
+    if (isRushBooking()) {
+      searchParams.append('rush', 'true');
+    }
     
     navigate(`/checkout/success/${orderId}?${searchParams.toString()}`);
     
@@ -26,16 +31,17 @@ const CheckoutProcessing: React.FC = () => {
     clearCart();
   };
 
-  if (cart.length === 0) {
+  if (properties.length === 0) {
     return null;
   }
 
   return (
     <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[calc(100vh-64px)]">
       <OrderProcessingModalWrapper
-        properties={cart}
+        properties={properties}
         onComplete={handleComplete}
-        totalPrice={totalPrice}
+        totalPrice={getTotalPrice()}
+        rush={isRushBooking()}
       />
     </div>
   );

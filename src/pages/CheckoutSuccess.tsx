@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Calendar, CreditCard, Clock, LucideIcon } from 'lucide-react';
@@ -22,7 +21,6 @@ interface Order {
   totalPrice: number;
   discount?: number;
   surge?: boolean;
-  // We'll handle rushBooking in the component without needing it in the interface
 }
 
 const SuccessItem: React.FC<{ icon: LucideIcon; title: string; description: string }> = ({
@@ -97,6 +95,7 @@ const CheckoutSuccess: React.FC = () => {
           properties={[]}
           onComplete={handleComplete}
           totalPrice={0}
+          rush={rushBooking}
         />
       </div>
     );
