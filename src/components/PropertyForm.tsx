@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -120,7 +121,7 @@ export const PropertyForm: React.FC = () => {
                   
                   <div>
                     <Label htmlFor="landlordEmail" className="text-base">
-                      Email <span className="text-[#FF385C]">*</span>
+                      Email (Optional) <span className="text-[#FF385C]">*</span>
                     </Label>
                     <Input id="landlordEmail" name="landlordEmail" type="email" placeholder="Landlord's email address" value={formData.landlordEmail} onChange={handleChange} className="mt-1.5 bg-white border-gray-300" required />
                   </div>
