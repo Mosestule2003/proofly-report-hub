@@ -63,7 +63,7 @@ export function Header() {
             </Button>
             
             {isAuthenticated ? <>
-                <Button variant="outline" onClick={() => navigate('/dashboard')} className="border-gray-300 hover:border-[#FF385C] hover:text-[#FF385C] an the sign out when i hover over them they go all pink, I want that to still happen but then change the font colot to white so the background is pink and the font white\n">
+                <Button variant="outline" onClick={() => navigate('/dashboard')} className="border-gray-300 hover:border-[#FF385C] hover:text-[#FF385C] an the sign out when i hover over them they go all pink, I want that to still happen but then change the font colot to white so the background is pink and the font whiten">
                   Dashboard
                 </Button>
                 <Button variant="ghost" onClick={logout} className="hover:text-[#FF385C]">
