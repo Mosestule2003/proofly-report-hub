@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,11 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
-  const handleDemoRequest = (e: React.FormEvent) => {
+  const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes('@')) {
       toast({
@@ -24,12 +28,26 @@ const Home: React.FC = () => {
       });
       return;
     }
+
+    // Open the contact modal to collect more information
+    setIsContactModalOpen(true);
+  };
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
+    // In a real application, you'd send this data to your backend
+    // For now, we'll simulate success and provide feedback to the user
     toast({
-      title: "Demo Request Received",
-      description: "We'll be in touch with you soon!"
+      title: "Message Sent",
+      description: "Thank you! We'll be in touch with you soon.",
     });
+    
+    // Reset form fields and close modal
     setEmail('');
+    setSubject('');
+    setMessage('');
+    setIsContactModalOpen(false);
   };
 
   return (
@@ -233,7 +251,7 @@ const Home: React.FC = () => {
           </div>
           
           <div className="max-w-md mx-auto">
-            <form onSubmit={handleDemoRequest} className="flex flex-col sm:flex-row gap-4">
+            <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-4">
               <Input
                 type="email"
                 placeholder="Enter your email"
@@ -245,12 +263,87 @@ const Home: React.FC = () => {
                 type="submit" 
                 className="bg-[#FF385C] hover:bg-[#e0334f] text-white h-12 font-medium"
               >
-                Request a Demo
+                Contact Us
               </Button>
             </form>
           </div>
         </div>
       </section>
+
+      {/* Contact Modal */}
+      {isContactModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in fade-in-50 zoom-in-95">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">Send us a message</h3>
+                <button 
+                  onClick={() => setIsContactModalOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleContactSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                  <Input
+                    id="subject"
+                    type="text"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="w-full"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                  <textarea
+                    id="message"
+                    rows={4}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 p-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    required
+                  ></textarea>
+                </div>
+                
+                <div className="flex justify-end gap-3">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setIsContactModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="bg-[#FF385C] hover:bg-[#e0334f] text-white"
+                  >
+                    Send Message
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
