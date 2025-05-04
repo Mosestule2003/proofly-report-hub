@@ -8,7 +8,7 @@ interface OrderProcessingModalProps {
   rush?: boolean; // Optional rush property
 }
 
-// This is a placeholder component for the OrderProcessingModal
+// This is the actual component implementation
 export const OrderProcessingModal: React.FC<OrderProcessingModalProps> = ({
   properties,
   onComplete,

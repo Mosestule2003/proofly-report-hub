@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Home,
@@ -8,7 +7,8 @@ import {
   User, 
   Camera, 
   FileText, 
-  CornerDownRight 
+  CornerDownRight,
+  Check 
 } from 'lucide-react';
 
 interface StageProps {
