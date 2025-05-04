@@ -102,12 +102,14 @@ const CheckoutSuccess: React.FC = () => {
     id: prop.id || crypto.randomUUID(),
     address: prop.address,
     description: prop.description || '',
-    price: prop.price || 30,
+    price: prop.price || 0,
+    city: prop.city || 'vancouver',
+    proximityZone: prop.proximityZone || 'A',
     landlordInfo: prop.landlordInfo // Ensure landlord info is included for outreach
   })) as Property[] || [];
 
   // Calculate the total price for the properties
-  const totalPrice = order?.totalPrice || propertiesWithIds.reduce((sum, prop) => sum + prop.price, 0);
+  const totalPrice = order?.totalPrice || 0;
   
   return (
     <>
@@ -116,6 +118,7 @@ const CheckoutSuccess: React.FC = () => {
           properties={propertiesWithIds} 
           onComplete={handleProcessingComplete} 
           totalPrice={totalPrice}
+          rush={order?.rushBooking || false}
         />
       )}
       
@@ -144,12 +147,28 @@ const CheckoutSuccess: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Price</p>
-                  <p className="font-medium">${order?.totalPrice.toFixed(2)}</p>
+                  <p className="font-medium">${order?.totalPrice.toFixed(2)} CAD</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
                   <p className="font-medium">{showProcessing ? 'Processing' : 'Report Ready'}</p>
                 </div>
+                
+                {/* Show rush booking status if applicable */}
+                {order?.rushBooking && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Rush Booking</p>
+                    <p className="font-medium">Yes (24hr)</p>
+                  </div>
+                )}
+                
+                {/* Show bulk discount if applicable */}
+                {order?.bulkDiscount && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Bulk Discount</p>
+                    <p className="font-medium">10% Applied</p>
+                  </div>
+                )}
               </div>
             </div>
             

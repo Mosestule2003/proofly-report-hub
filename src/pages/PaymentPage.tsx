@@ -11,7 +11,7 @@ import { useCart } from '@/context/CartContext';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, CreditCard, Calendar, Lock, Info, CloudRain, MapPin } from 'lucide-react';
+import { Loader2, CreditCard, Calendar, Lock, Info, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Tooltip,
@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { cityPricing, proximityZoneDescriptions } from '@/utils/pricingUtils';
 
 const paymentSchema = z.object({
   cardNumber: z.string().min(16, "Card number must be at least 16 digits").max(19),
@@ -43,9 +44,12 @@ const PaymentPage: React.FC = () => {
     properties, 
     getTotalPrice, 
     getDiscount,
-    getBaseFeeTotal,
-    getDistanceSurchargeTotal, 
-    getWeatherSurchargeTotal 
+    getBaseFeesTotal,
+    getProximityFeesTotal,
+    getRushFeesTotal,
+    getSurgeFee,
+    isRushBooking,
+    isSurgeActive 
   } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPricingExplanation, setShowPricingExplanation] = useState(false);
@@ -198,7 +202,7 @@ const PaymentPage: React.FC = () => {
                           Processing...
                         </>
                       ) : (
-                        `Pay $${getTotalPrice().toFixed(2)}`
+                        `Pay $${getTotalPrice().toFixed(2)} CAD`
                       )}
                     </Button>
                   </div>
@@ -228,22 +232,30 @@ const PaymentPage: React.FC = () => {
               {/* Base fees */}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Base fees</span>
-                <span>${getBaseFeeTotal().toFixed(2)}</span>
+                <span>${getBaseFeesTotal().toFixed(2)}</span>
               </div>
               
-              {/* Distance surcharge */}
-              {getDistanceSurchargeTotal() > 0 && (
+              {/* Distance/proximity fees */}
+              {getProximityFeesTotal() > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Distance surcharge</span>
-                  <span>+${getDistanceSurchargeTotal().toFixed(2)}</span>
+                  <span className="text-muted-foreground">Distance fees</span>
+                  <span>+${getProximityFeesTotal().toFixed(2)}</span>
                 </div>
               )}
               
-              {/* Weather adjustment */}
-              {getWeatherSurchargeTotal() > 0 && (
+              {/* Rush fees */}
+              {isRushBooking() && getRushFeesTotal() > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Weather adjustment</span>
-                  <span>+${getWeatherSurchargeTotal().toFixed(2)}</span>
+                  <span className="text-muted-foreground">Rush booking</span>
+                  <span>+${getRushFeesTotal().toFixed(2)}</span>
+                </div>
+              )}
+              
+              {/* Surge fee */}
+              {isSurgeActive() && getSurgeFee() > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Surge fee</span>
+                  <span>+${getSurgeFee().toFixed(2)}</span>
                 </div>
               )}
               
@@ -253,10 +265,10 @@ const PaymentPage: React.FC = () => {
                 <span>${(getTotalPrice() + getDiscount()).toFixed(2)}</span>
               </div>
               
-              {/* Volume discount */}
+              {/* Bulk discount */}
               {getDiscount() > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Discount (15%)</span>
+                  <span>Bulk discount (10%)</span>
                   <span>-${getDiscount().toFixed(2)}</span>
                 </div>
               )}
@@ -265,7 +277,7 @@ const PaymentPage: React.FC = () => {
               
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${getTotalPrice().toFixed(2)}</span>
+                <span>${getTotalPrice().toFixed(2)} CAD</span>
               </div>
               
               <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
@@ -275,22 +287,17 @@ const PaymentPage: React.FC = () => {
                     <div className="truncate font-medium mb-0.5">{index + 1}. {property.address}</div>
                     <div className="grid grid-cols-2 gap-1">
                       <div className="flex items-center">
-                        <span>Base: ${property.pricing?.baseFee.toFixed(2)}</span>
+                        <span>
+                          {property.city && cityPricing[property.city] 
+                            ? cityPricing[property.city].name 
+                            : 'Vancouver'}
+                        </span>
                       </div>
                       
-                      {property.pricing?.distanceSurcharge > 0 && (
-                        <div className="flex items-center">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          <span>+${property.pricing.distanceSurcharge.toFixed(2)}</span>
-                        </div>
-                      )}
-                      
-                      {property.pricing?.weatherMultiplier > 1 && (
-                        <div className="flex items-center">
-                          <CloudRain className="h-3 w-3 mr-1" />
-                          <span>{property.pricing.weatherMultiplier}×</span>
-                        </div>
-                      )}
+                      <div className="flex items-center">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        <span>Zone {property.proximityZone || 'A'}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -312,56 +319,67 @@ const PaymentPage: React.FC = () => {
           
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <h3 className="font-medium">Base Fee</h3>
+              <h3 className="font-medium">City-Based Pricing</h3>
               <p className="text-sm text-muted-foreground">
-                All evaluations start with a base fee of $25 per property.
+                Each city has a different base price reflecting local costs:
               </p>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="font-medium">Distance Surcharge</h3>
-              <p className="text-sm text-muted-foreground">
-                We calculate the distance from your first property to each additional property:
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+              <div className="grid grid-cols-3 gap-2 text-sm mt-2">
                 <div className="p-2 border rounded-md">
-                  <span className="font-medium">0-5 km:</span> No additional charge
+                  <span className="font-medium">Kamloops:</span> $18
                 </div>
                 <div className="p-2 border rounded-md">
-                  <span className="font-medium">5-15 km:</span> +$5
+                  <span className="font-medium">Vancouver:</span> $28
                 </div>
                 <div className="p-2 border rounded-md">
-                  <span className="font-medium">15-30 km:</span> +$10
-                </div>
-                <div className="p-2 border rounded-md">
-                  <span className="font-medium">Over 30 km:</span> +$15
+                  <span className="font-medium">Toronto:</span> $30
                 </div>
               </div>
             </div>
             
             <div className="space-y-2">
-              <h3 className="font-medium">Weather Conditions</h3>
+              <h3 className="font-medium">Distance Zones</h3>
               <p className="text-sm text-muted-foreground">
-                We check weather data for each location at the time of evaluation:
+                Additional fees based on property distance:
               </p>
               <div className="grid grid-cols-2 gap-2 text-sm mt-2">
                 <div className="p-2 border rounded-md">
-                  <span className="font-medium">Normal conditions:</span> 1× multiplier
+                  <span className="font-medium">Zone A (0-5 km):</span> +$0
                 </div>
                 <div className="p-2 border rounded-md">
-                  <span className="font-medium">Rain or snow:</span> 1.2× multiplier
+                  <span className="font-medium">Zone B (5-10 km):</span> +$3
                 </div>
                 <div className="p-2 border rounded-md">
-                  <span className="font-medium">Extreme conditions:</span> 1.5× multiplier
+                  <span className="font-medium">Zone C (10-15 km):</span> +$6
                 </div>
-                <div></div>
+                <div className="p-2 border rounded-md">
+                  <span className="font-medium">Zone D (>15 km):</span> +$9
+                </div>
               </div>
             </div>
             
             <div className="space-y-2">
-              <h3 className="font-medium">Volume Discount</h3>
+              <h3 className="font-medium">Rush Booking Option</h3>
               <p className="text-sm text-muted-foreground">
-                For 5 or more properties, we apply a 15% discount to your total evaluation fee.
+                For viewing properties within 24 hours:
+              </p>
+              <div className="grid grid-cols-1 gap-2 text-sm mt-2">
+                <div className="p-2 border rounded-md">
+                  <span className="font-medium">Rush fee:</span> +$7 per property
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="font-medium">Bulk Discount</h3>
+              <p className="text-sm text-muted-foreground">
+                For 4 or more properties, we apply a 10% discount to your total evaluation fee.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="font-medium">Surge Pricing</h3>
+              <p className="text-sm text-muted-foreground">
+                During high demand periods, a $5 surge fee may be added per session.
               </p>
             </div>
           </div>

@@ -7,7 +7,7 @@ import OrderProcessingModal from '@/components/OrderProcessingModal';
 
 const CheckoutProcessing: React.FC = () => {
   const navigate = useNavigate();
-  const { properties, getTotalPrice, clearCart } = useCart();
+  const { properties, getTotalPrice, clearCart, isRushBooking } = useCart();
 
   // Handle processing completion
   const handleProcessingComplete = () => {
@@ -33,6 +33,7 @@ const CheckoutProcessing: React.FC = () => {
       properties={properties}
       onComplete={handleProcessingComplete}
       totalPrice={getTotalPrice()}
+      rush={isRushBooking()}
     />
   );
 };
