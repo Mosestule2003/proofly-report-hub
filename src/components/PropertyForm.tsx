@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,15 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Check, Loader2, MapPin } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProximityZone, cityPricing, proximityZoneDescriptions } from '@/utils/pricingUtils';
-
 export const PropertyForm: React.FC = () => {
   const navigate = useNavigate();
   const {
@@ -33,12 +25,12 @@ export const PropertyForm: React.FC = () => {
     landlordEmail: '',
     landlordPhone: '',
     landlordCompany: '',
-    city: 'vancouver', // Default city
-    proximityZone: 'A' as ProximityZone, // Default proximity zone
+    city: 'vancouver',
+    // Default city
+    proximityZone: 'A' as ProximityZone // Default proximity zone
   });
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const {
       name,
@@ -49,7 +41,6 @@ export const PropertyForm: React.FC = () => {
       [name]: value
     }));
   };
-  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -74,10 +65,12 @@ export const PropertyForm: React.FC = () => {
         description: formData.description,
         city: formData.city,
         proximityZone: formData.proximityZone,
-        price: 0, // This will be calculated by the CartContext
+        price: 0,
+        // This will be calculated by the CartContext
         landlordInfo: {
           name: formData.landlordName,
-          email: formData.landlordEmail || '', // Make email optional
+          email: formData.landlordEmail || '',
+          // Make email optional
           phone: formData.landlordPhone,
           company: formData.landlordCompany || 'N/A'
         }
@@ -94,7 +87,6 @@ export const PropertyForm: React.FC = () => {
       }, 2000);
     }, 1500);
   };
-  
   return <Card className="border border-gray-100 shadow-lg">
       <CardContent className="p-6">
         {submitted ? <div className="text-center py-16 space-y-4">
@@ -124,47 +116,9 @@ export const PropertyForm: React.FC = () => {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="city" className="text-base">
-                    City <span className="text-[#FF385C]">*</span>
-                  </Label>
-                  <Select
-                    value={formData.city}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, city: value }))}
-                  >
-                    <SelectTrigger className="bg-white border-gray-300 mt-1.5">
-                      <SelectValue placeholder="Select a city" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(cityPricing).map(([key, city]) => (
-                        <SelectItem key={key} value={key}>
-                          {city.name} (${city.basePrice})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 
-                <div>
-                  <Label htmlFor="proximityZone" className="text-base">
-                    Distance Zone <span className="text-[#FF385C]">*</span>
-                  </Label>
-                  <Select
-                    value={formData.proximityZone}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, proximityZone: value as ProximityZone }))}
-                  >
-                    <SelectTrigger className="bg-white border-gray-300 mt-1.5">
-                      <SelectValue placeholder="Select distance zone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(proximityZoneDescriptions).map(([zone, description]) => (
-                        <SelectItem key={zone} value={zone}>
-                          Zone {zone}: {description}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                
+                
               </div>
               
               <div className="pt-4 border-t border-gray-100">
