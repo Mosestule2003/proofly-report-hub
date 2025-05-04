@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -63,17 +64,32 @@ export function Header() {
             </Button>
             
             {isAuthenticated ? <>
-                <Button variant="outline" onClick={() => navigate('/dashboard')} className="border-gray-300 hover:border-[#FF385C] hover:text-[#FF385C] an the sign out when i hover over them they go all pink, I want that to still happen but then change the font colot to white so the background is pink and the font whiten">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/dashboard')} 
+                  className="border-gray-300 hover:bg-[#FF385C] hover:border-[#FF385C] hover:text-white transition-colors"
+                >
                   Dashboard
                 </Button>
-                <Button variant="ghost" onClick={logout} className="hover:text-[#FF385C]">
+                <Button 
+                  variant="ghost" 
+                  onClick={logout} 
+                  className="hover:bg-[#FF385C] hover:text-white transition-colors"
+                >
                   Sign out
                 </Button>
               </> : <>
-                <Button variant="ghost" onClick={() => navigate('/login')} className="hover:text-[#FF385C]">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/login')} 
+                  className="hover:bg-[#FF385C] hover:text-white transition-colors"
+                >
                   Log in
                 </Button>
-                <Button onClick={() => navigate('/signup')} className="bg-[#FF385C] hover:bg-[#e0334f] text-white">
+                <Button 
+                  onClick={() => navigate('/signup')} 
+                  className="bg-[#FF385C] hover:bg-[#e0334f] text-white"
+                >
                   Sign up
                 </Button>
               </>}
