@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,25 +5,28 @@ import { useAuth } from '@/context/AuthContext';
 import ReturnToAdminBanner from './ReturnToAdminBanner';
 import { ShoppingCart } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-
 export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, isAuthenticated } = useAuth();
-  const { properties } = useCart();
-  
+  const {
+    user,
+    logout,
+    isAuthenticated
+  } = useAuth();
+  const {
+    properties
+  } = useCart();
+
   // Don't show header on admin pages or for admin users
   const isAdminPage = location.pathname.startsWith('/admin');
   const isAdminLoginPage = location.pathname === '/admin/login';
   const isAdminUser = isAuthenticated && user?.role === 'admin';
-  
+
   // Hide header on admin pages (except login) or for admin users on any page
-  if ((isAdminPage && !isAdminLoginPage) || isAdminUser) {
+  if (isAdminPage && !isAdminLoginPage || isAdminUser) {
     return <ReturnToAdminBanner />;
   }
-
-  return (
-    <>
+  return <>
       <ReturnToAdminBanner />
       <header className="border-b bg-white">
         <div className="container flex items-center justify-between py-4">
@@ -53,58 +55,30 @@ export function Header() {
           </nav>
           
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/cart')}
-              className="relative"
-              aria-label="Shopping cart"
-            >
+            <Button variant="ghost" size="icon" onClick={() => navigate('/cart')} className="relative" aria-label="Shopping cart">
               <ShoppingCart className="h-5 w-5" />
-              {properties.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#FF385C] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {properties.length > 0 && <span className="absolute -top-1 -right-1 bg-[#FF385C] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {properties.length}
-                </span>
-              )}
+                </span>}
             </Button>
             
-            {isAuthenticated ? (
-              <>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/dashboard')}
-                  className="border-gray-300 hover:border-[#FF385C] hover:text-[#FF385C]"
-                >
+            {isAuthenticated ? <>
+                <Button variant="outline" onClick={() => navigate('/dashboard')} className="border-gray-300 hover:border-[#FF385C] hover:text-[#FF385C] an the sign out when i hover over them they go all pink, I want that to still happen but then change the font colot to white so the background is pink and the font white\n">
                   Dashboard
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  onClick={logout}
-                  className="hover:text-[#FF385C]"
-                >
+                <Button variant="ghost" onClick={logout} className="hover:text-[#FF385C]">
                   Sign out
                 </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => navigate('/login')}
-                  className="hover:text-[#FF385C]"
-                >
+              </> : <>
+                <Button variant="ghost" onClick={() => navigate('/login')} className="hover:text-[#FF385C]">
                   Log in
                 </Button>
-                <Button 
-                  onClick={() => navigate('/signup')}
-                  className="bg-[#FF385C] hover:bg-[#e0334f] text-white"
-                >
+                <Button onClick={() => navigate('/signup')} className="bg-[#FF385C] hover:bg-[#e0334f] text-white">
                   Sign up
                 </Button>
-              </>
-            )}
+              </>}
           </div>
         </div>
       </header>
-    </>
-  );
+    </>;
 }
