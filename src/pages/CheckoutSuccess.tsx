@@ -4,6 +4,7 @@ import { Check, Calendar, CreditCard, Clock, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { OrderProcessingModalWrapper } from '@/components/OrderProcessingModalWrapper';
+import { ProoflyWorkflowStages } from '@/components/ProoflyWorkflowStages';
 
 // Define the order interface
 interface Property {
@@ -45,6 +46,7 @@ const CheckoutSuccess: React.FC = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
+  const [showWorkflow, setShowWorkflow] = useState(false);
 
   // This simulates fetching the order details
   useEffect(() => {
@@ -77,6 +79,13 @@ const CheckoutSuccess: React.FC = () => {
       };
       setOrder(mockOrder);
       setIsLoading(false);
+      
+      // Show workflow after a short delay
+      const workflowTimer = setTimeout(() => {
+        setShowWorkflow(true);
+      }, 2000);
+      
+      return () => clearTimeout(workflowTimer);
     }, 1500);
 
     return () => clearTimeout(timer);
@@ -112,6 +121,14 @@ const CheckoutSuccess: React.FC = () => {
           Your order #{orderId} has been successfully placed.
         </p>
       </div>
+
+      {/* Workflow Stages */}
+      {showWorkflow && (
+        <div className="mb-8 animate-fade-in">
+          <h2 className="text-xl font-semibold mb-4 text-center">Your Proofly Journey</h2>
+          <ProoflyWorkflowStages />
+        </div>
+      )}
 
       <Card className="mb-8">
         <CardHeader>
