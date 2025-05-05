@@ -1,14 +1,14 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/context/CartContext';
-import { ArrowRight, Check, Laptop, MapPin, PieChart, Shield, Star, Users } from 'lucide-react';
+import { ArrowRight, Check, Laptop, MapPin, PieChart, Shield, Star, Users, Mail } from 'lucide-react';
 import { PropertyForm } from '@/components/PropertyForm';
 import { ProoflyWorkflowStages } from '@/components/ProoflyWorkflowStages';
+import emailjs from 'emailjs-com';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -17,6 +17,8 @@ const Home: React.FC = () => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,19 +37,48 @@ const Home: React.FC = () => {
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    // In a real application, you'd send this data to your backend
-    // For now, we'll simulate success and provide feedback to the user
-    toast({
-      title: "Message Sent",
-      description: "Thank you! We'll be in touch with you soon.",
+    // Prepare the template parameters for EmailJS
+    const templateParams = {
+      to_email: "your-email@example.com", // Replace with your email address
+      from_email: email,
+      subject: subject,
+      message: message
+    };
+    
+    // Send the email using EmailJS
+    // You'll need to replace the service_id, template_id, and user_id with your own
+    emailjs.send(
+      'YOUR_SERVICE_ID',  // Replace with your EmailJS service ID
+      'YOUR_TEMPLATE_ID', // Replace with your EmailJS template ID
+      templateParams,
+      'YOUR_USER_ID'      // Replace with your EmailJS user ID
+    )
+    .then((response) => {
+      console.log('Email sent successfully:', response);
+      toast({
+        title: "Message Sent",
+        description: "Thank you! We'll be in touch with you soon.",
+      });
+      
+      // Reset form fields and close modal
+      setEmail('');
+      setSubject('');
+      setMessage('');
+      setIsContactModalOpen(false);
+    })
+    .catch((error) => {
+      console.error('Email sending failed:', error);
+      toast({
+        title: "Message Failed",
+        description: "There was an error sending your message. Please try again later.",
+        variant: "destructive"
+      });
+    })
+    .finally(() => {
+      setIsSubmitting(false);
     });
-    
-    // Reset form fields and close modal
-    setEmail('');
-    setSubject('');
-    setMessage('');
-    setIsContactModalOpen(false);
   };
 
   return (
@@ -263,6 +294,7 @@ const Home: React.FC = () => {
                 type="submit" 
                 className="bg-[#FF385C] hover:bg-[#e0334f] text-white h-12 font-medium"
               >
+                <Mail className="mr-2 h-5 w-5" />
                 Contact Us
               </Button>
             </form>
@@ -287,7 +319,7 @@ const Home: React.FC = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleContactSubmit} className="space-y-4">
+              <form ref={formRef} onSubmit={handleContactSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <Input
@@ -329,14 +361,16 @@ const Home: React.FC = () => {
                     type="button" 
                     variant="outline"
                     onClick={() => setIsContactModalOpen(false)}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
                   <Button 
                     type="submit"
                     className="bg-[#FF385C] hover:bg-[#e0334f] text-white"
+                    disabled={isSubmitting}
                   >
-                    Send Message
+                    {isSubmitting ? 'Sending...' : 'Send Message'}
                   </Button>
                 </div>
               </form>
