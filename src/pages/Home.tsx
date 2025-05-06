@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { ArrowRight, Check, Laptop, MapPin, PieChart, Shield, Star, Users, Mail 
 import { PropertyForm } from '@/components/PropertyForm';
 import { ProoflyWorkflowStages } from '@/components/ProoflyWorkflowStages';
 import emailjs from 'emailjs-com';
+import { toast } from 'sonner';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
